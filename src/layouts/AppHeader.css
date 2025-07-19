@@ -1,0 +1,38 @@
+/* === CÁC STYLE CŨ CHO MÀU SẮC (NẾU KHÔNG DÙNG CONFIGPROVIDER) === */
+.green-theme-main-menu.ant-menu {
+  background-color: #1F7D53;
+  color: #FFFFFF;
+  border-bottom: none;
+}
+.green-theme-main-menu .ant-menu-item a,
+.green-theme-main-menu .ant-menu-submenu-title {
+  color: #FFFFFF;
+}
+
+.green-theme-main-menu .ant-menu-item:hover,
+.green-theme-main-menu .ant-menu-submenu-title:hover {
+  background-color: #5ea57d !important;
+  color: #ffffff !important;
+}
+.green-theme-main-menu .ant-menu-item-selected {
+  background-color: #2a7c56 !important;
+  color: #FFFFFF !important;
+}
+.green-theme-main-menu.ant-menu-horizontal > .ant-menu-item::after,
+.green-theme-main-menu.ant-menu-horizontal > .ant-menu-submenu::after {
+    border-bottom-color: #1F7D53 !important;
+}
+
+/* === QUY TẮC CSS MỚI ĐỂ THÊM BORDER === */
+
+/* Thêm một đường viền bên phải cho mỗi mục menu và submenu ở cấp đầu tiên */
+.green-theme-main-menu.ant-menu-horizontal > .ant-menu-item,
+.green-theme-main-menu.ant-menu-horizontal > .ant-menu-submenu {
+  border-right: 1px solid rgba(255, 255, 255, 0.2); /* Màu trắng mờ để trông tinh tế */
+}
+
+/* Loại bỏ đường viền bên phải cho mục cuối cùng để không bị thừa */
+.green-theme-main-menu.ant-menu-horizontal > .ant-menu-item:last-child,
+.green-theme-main-menu.ant-menu-horizontal > .ant-menu-submenu:last-child {
+  border-right: none;
+}
