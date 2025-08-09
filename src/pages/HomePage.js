@@ -1,44 +1,29 @@
 import React, { useEffect, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import { Link as RouterLink } from "react-router-dom";
 import {
   Row,
   Col,
-  Menu,
   Carousel,
   Card,
   Typography,
   Button,
   Image,
   Spin,
-  Avatar,
   Divider,
-  Space,
+  Input,   // Đã thêm
+  Slider,  // Đã thêm
 } from "antd";
 import {
   LeftOutlined,
   RightOutlined,
+  TikTokOutlined,
   ShoppingCartOutlined,
-  ArrowRightOutlined,
+  BorderBottomOutlined,
 } from "@ant-design/icons";
-import { PromotionalPopup } from "../components/PromotionalPopup";
-import { database } from "../firebaseConfig/firebase-config";
-import {
-  get,
-  limitToLast,
-  onValue,
-  orderByChild,
-  push,
-  query,
-  ref,
-  set,
-} from "firebase/database";
-
-// Import các hàm API cần thiết
 import { getListFlower, getFlowersByStatus } from "../function/FlowerAPI";
 import { getListCategory } from "../function/CategoryAPI";
 
-const { Title, Text, Link, Paragraph } = Typography;
-const { Meta } = Card;
+const { Title, Text, Paragraph } = Typography;
 
 const themeColors = {
   primary: "#255F38",
@@ -48,6 +33,7 @@ const themeColors = {
   lightGreenBg: "rgba(31, 125, 83, 0.05)",
 };
 
+// --- STYLES OBJECT (Giữ nguyên) ---
 const styles = {
   pageContainer: {
     backgroundColor: themeColors.background,
@@ -61,7 +47,6 @@ const styles = {
     textAlign: "center",
     padding: "30px 15px",
     backgroundColor: "#eaf2ec",
-    borderRadius: "8px",
     marginBottom: "30px",
   },
   quickCategoriesTitle: {
@@ -73,6 +58,11 @@ const styles = {
     fontSize: "16px",
     fontWeight: "500",
     marginBottom: "25px",
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: '10px'
   },
   categoryCircleLink: {
     display: "flex",
@@ -83,7 +73,6 @@ const styles = {
   categoryCircleImageWrapper: {
     width: "120px",
     height: "120px",
-    borderRadius: "50%",
     overflow: "hidden",
     marginBottom: "15px",
     border: "2px solid #fff",
@@ -93,496 +82,403 @@ const styles = {
   categoryCircleImage: {
     width: "100%",
     height: "100%",
-    objectFit: "cover",
+    objectFit: "contain",
   },
   categoryCircleLabel: {
     fontWeight: "bold",
     color: themeColors.primaryDark,
     textAlign: "center",
   },
-  sideMenu: {
-    backgroundColor: "#fff",
-    borderRadius: "8px",
-    border: "1px solid #f0f0f0",
-  },
-  mainCarousel: {
-    borderRadius: "8px",
-    overflow: "hidden",
-  },
   categoryProductsGrid: {
-    marginTop: "40px",
+    padding: "20px",
+    marginTop:'20px',
   },
-  // Đã bỏ overflow: "hidden" và height cố định ở đây
-  categoryProductCard: {
-    border: "1px solid #e8e8e8",
-    borderRadius: "12px",
+  productCard: {
+    width: "100%",
     backgroundColor: "#fff",
+    border: "1px solid #e3e3e3",
+    borderRadius: '8px',
+    overflow: "hidden",
     display: "flex",
     flexDirection: "column",
-    // height: "auto", // Hoặc bỏ hoàn toàn để nó tự co giãn
+    height: '100%', // Đảm bảo card có chiều cao đầy đủ
   },
-  categoryProductImageWrapper: {
-    height: "220px",
-    width: "100%",
-    backgroundColor: "#f5f5f5",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
+  productImage: {
+    padding:'20px',
+    width: '100%',
+    height:'200px',
+    objectFit: "contain",
+    transition: 'transform 0.3s ease',
+    border:"1px solid black"
   },
-  categoryProductImage: {
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-  },
-  categoryProductInfo: {
-    padding: "16px",
-    flexGrow: 1, // Đảm bảo phần info chiếm hết không gian còn lại
+  productInfo: {
+    padding: "10px",
+    flexGrow: 1,
     display: "flex",
     flexDirection: "column",
+    justifyContent: "space-between",
     textAlign: "left",
   },
-  productDescription: {
-    color: "#8c8c8c",
+  productName: {
+    color: '#424242',
+    fontWeight: "500",
     marginBottom: "10px",
+    height: '3.2em',
+    lineHeight: '1.6em',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    display: '-webkit-box',
+    webkitBoxOrient: 'vertical',
+    webkitLineClamp: '2',
+  },
+  productFooter: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 'auto',
   },
   productPrice: {
     color: themeColors.accent,
-    fontWeight: "bold",
-    fontSize: "18px",
-  },
-  mostPurchasedSection: {
-    marginTop: "60px",
-    backgroundColor: themeColors.lightGreenBg,
-    padding: "40px 0",
-  },
-  sectionTitleContainer: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "30px",
-    padding: "0 15px",
-    maxWidth: "1200px",
-    margin: "0 auto",
-  },
-  sectionTitle: {
-    color: themeColors.primaryDark,
-    margin: 0,
-    position: "relative",
-    paddingLeft: "15px",
-  },
-  sectionTitleDecorator: {
-    position: "absolute",
-    left: 0,
-    top: "50%",
-    transform: "translateY(-50%)",
-    width: "5px",
-    height: "25px",
-    backgroundColor: themeColors.primary,
-    borderRadius: "3px",
-  },
-  purchasedProductCard: {
-    textAlign: "center",
-    border: "1px solid #e6e6e6",
-    borderRadius: "8px",
-    backgroundColor: "#fff",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
-    height: "100%",
-    margin: "0 8px",
-  },
-  purchasedProductPrice: {
-    color: themeColors.primary,
-    fontWeight: "bold",
     fontSize: "16px",
-    margin: "10px 0",
+    fontWeight: 'bold',
+    margin: 0,
   },
   addToCartButton: {
     backgroundColor: themeColors.primary,
-    color: "#fff",
-    fontWeight: "bold",
-    width: "100%",
+    color: '#fff',
+    border: 'none',
   },
 };
 
-const HomePage = () => {
-  const { categoryMenuItems = [] } = useOutletContext();
-  const [expanded, setExpanded] = useState(false);
+// --- HÀM HỖ TRỢ TÌM KIẾM ---
+const normalizeText = (text) => {
+  if (!text) return '';
+  return text
+      .toString()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+};
 
-  // Giới hạn chiều cao cho phần mô tả để card không bị quá dài ban đầu
-  const descriptionStyle = expanded ? {} : { maxHeight: "60px", overflow: "hidden" };
+
+// --- COMPONENT ---
+const HomePage = () => {
   const [quickCategoriesData, setQuickCategoriesData] = useState([]);
   const [loadingQuickCategories, setLoadingQuickCategories] = useState(true);
-
-  const [flowers, setFlowers] = useState([]);
-  const [loadingFlowers, setLoadingFlowers] = useState(true);
-
+  
   const [availableProducts, setAvailableProducts] = useState([]);
   const [loadingAvailableProducts, setLoadingAvailableProducts] = useState(true);
+  
+  // State cho TẤT CẢ SẢN PHẨM và BỘ LỌC
+  const [allFlowers, setAllFlowers] = useState([]);
+  const [filteredFlowers, setFilteredFlowers] = useState([]);
+  const [loadingFlowers, setLoadingFlowers] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [priceRange, setPriceRange] = useState([0, 1000000]);
+  const [maxPrice, setMaxPrice] = useState(1000000);
 
-  const [expandedDescriptions, setExpandedDescriptions] = useState({});
 
   const featuredCarouselSettings = {
     dots: false,
-    infinite: true,
+    infinite: false,
     speed: 500,
-    slidesToShow: 3,
+    slidesToShow: 4,
     slidesToScroll: 1,
     arrows: true,
     responsive: [
-      {
-        breakpoint: 992,
-        settings: { slidesToShow: 2 },
-      },
-      {
-        breakpoint: 576,
-        settings: { slidesToShow: 1 },
-      },
+      { breakpoint: 1200, settings: { slidesToShow: 3 } },
+      { breakpoint: 992, settings: { slidesToShow: 2 } },
+      { breakpoint: 576, settings: { slidesToShow: 1 } },
     ],
-  };
-
-  const fetchFlowers = () => {
-    setLoadingFlowers(true);
-    getListFlower()
-      .then((loadedFlowers) => {
-        setFlowers(loadedFlowers);
-        setLoadingFlowers(false);
-      })
-      .catch((error) => {
-        console.error("Lỗi khi đọc dữ liệu hoa từ Firebase:", error);
-        setLoadingFlowers(false);
-      });
-  };
-
-  const fetchAvailableProducts = async () => {
-    setLoadingAvailableProducts(true);
-    try {
-      const productsWithStatus1 = await getFlowersByStatus(1);
-      setAvailableProducts(productsWithStatus1);
-    } catch (error) {
-      console.error("Lỗi khi tải sản phẩm có sẵn tại shop:", error);
-      setAvailableProducts([]);
-    } finally {
-      setLoadingAvailableProducts(false);
-    }
-  };
-
-  const fetchQuickCategories = async () => {
-    setLoadingQuickCategories(true);
-    try {
-      const data = await getListCategory();
-      const formattedCategories = data.map((cat) => ({
-        id: cat.id,
-        img: cat.image,
-        label: cat.name.toUpperCase(),
-        link: `/projects/${cat.id}`,
-      }));
-      setQuickCategoriesData(formattedCategories);
-    } catch (error) {
-      console.error("Lỗi khi tải danh mục nhanh:", error);
-    } finally {
-      setLoadingQuickCategories(false);
-    }
-  };
-
-  const toggleDescription = (productId) => {
-    setExpandedDescriptions((prevState) => ({
-      ...prevState,
-      [productId]: !prevState[productId],
-    }));
+    prevArrow: <LeftOutlined className="slick-arrow slick-prev" />,
+    nextArrow: <RightOutlined className="slick-arrow slick-next" />,
   };
 
   useEffect(() => {
-    fetchFlowers();
-    fetchQuickCategories();
-    fetchAvailableProducts();
+    const fetchAllData = async () => {
+      // Tải danh mục nhanh
+      try {
+        setLoadingQuickCategories(true);
+        const data = await getListCategory();
+        const formattedCategories = data.map((cat) => ({
+          id: cat.id,
+          img: cat.image,
+          label: cat.name.toUpperCase(),
+          link: `/projects/${cat.id}`,
+        }));
+        setQuickCategoriesData(formattedCategories);
+      } catch (error) {
+        console.error("Lỗi khi tải danh mục nhanh:", error);
+      } finally {
+        setLoadingQuickCategories(false);
+      }
+
+      // Tải sản phẩm có sẵn
+      try {
+        setLoadingAvailableProducts(true);
+        const productsWithStatus1 = await getFlowersByStatus(1);
+        setAvailableProducts(productsWithStatus1);
+      } catch (error) {
+        console.error("Lỗi khi tải sản phẩm có sẵn tại shop:", error);
+      } finally {
+        setLoadingAvailableProducts(false);
+      }
+
+      // Tải TẤT CẢ SẢN PHẨM
+      try {
+        setLoadingFlowers(true);
+        const flowersData = await getListFlower();
+        setAllFlowers(flowersData);
+        setFilteredFlowers(flowersData);
+        
+        if (flowersData.length > 0) {
+            const max = Math.max(...flowersData.map(p => p.price || 0));
+            const newMaxPrice = max > 0 ? max : 1000000;
+            setMaxPrice(newMaxPrice);
+            setPriceRange([0, newMaxPrice]);
+        }
+
+      } catch (error) {
+        console.error("Lỗi khi đọc dữ liệu hoa từ Firebase:", error);
+      } finally {
+        setLoadingFlowers(false);
+      }
+    };
+
+    fetchAllData();
   }, []);
+  
+  // useEffect để LỌC TẤT CẢ SẢN PHẨM
+  useEffect(() => {
+    let tempFlowers = [...allFlowers];
+
+    if (searchTerm) {
+        const normalizedSearch = normalizeText(searchTerm);
+        tempFlowers = tempFlowers.filter(product => 
+            normalizeText(product.name).includes(normalizedSearch)
+        );
+    }
+
+    tempFlowers = tempFlowers.filter(product =>
+        (product.price || 0) >= priceRange[0] && (product.price || 0) <= priceRange[1]
+    );
+    
+    setFilteredFlowers(tempFlowers);
+
+  }, [searchTerm, priceRange, allFlowers]);
+
+
+  // --- Reusable Product Card Component ---
+  const ProductCard = ({ product }) => (
+    <RouterLink to={`/detail/${product.id}`} style={{ display: 'block', height: '100%' }}>
+        <Card
+            hoverable
+            style={styles.productCard}
+            cover={
+                <Image
+                    alt={product.name}
+                    src={product.image}
+                    preview={false}
+                    style={styles.productImage}
+                    className="product-image-hover-effect"
+                    fallback="https://placehold.co/220x220/ffffff/c0c0c0?text=No+Image"
+                />
+            }
+            bodyStyle={{ padding: 0, display: 'flex', flexGrow: 1 }}
+        >
+            <div style={styles.productInfo}>
+                <Paragraph style={styles.productName} title={product.name}>
+                    {product.name}
+                </Paragraph>
+                <div style={styles.productFooter}>
+                    <Paragraph style={styles.productPrice}>
+                        {product.price
+                            ? Number(product.price).toLocaleString("vi-VN", {
+                                style: "currency",
+                                currency: "VND",
+                            })
+                            : "Liên hệ"}
+                    </Paragraph>
+                    <Button
+                        type="primary"
+                        shape="circle"
+                        icon={<ShoppingCartOutlined />}
+                        style={styles.addToCartButton}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            console.log("Add to cart:", product.name);
+                        }}
+                    />
+                </div>
+            </div>
+        </Card>
+    </RouterLink>
+  );
+
 
   return (
     <div style={styles.pageContainer}>
       <div style={styles.contentWrapper}>
         {/* --- SECTION: GIAO HOA & DANH MỤC NHANH --- */}
         <div style={styles.quickCategoriesSection}>
-          <Title level={3} style={styles.quickCategoriesTitle}>
-            Giao hoa tận nơi các Quận, Huyện tại Cần Thơ
-          </Title>
-          <Title level={5} style={styles.quickCategoriesSubtitle}>
-            Chuyên viên tư vấn: 0939 435 535 - 0902 641 567 (Tư vấn qua Zalo,
-            Viber)
-          </Title>
-          {loadingQuickCategories ? (
-            <Spin size="large" tip="Đang tải danh mục..." />
-          ) : (
-            <Row gutter={[16, 24]}>
-              {quickCategoriesData.map((category, index) => (
-                <Col key={index} xs={12} sm={8} md={4}>
-                  <Link href={category.link} style={styles.categoryCircleLink}>
-                    <div
-                      style={styles.categoryCircleImageWrapper}
-                      className="category-circle-hover"
-                    >
-                      <Image
-                        src={category.img}
-                        alt={category.label}
-                        style={styles.categoryCircleImage}
-                        fallback="https://via.placeholder.com/120?text=No+Image"
-                        preview={false}
-                      />
-                    </div>
-                    <Text style={styles.categoryCircleLabel}>
-                      {category.label}
-                    </Text>
-                  </Link>
-                </Col>
-              ))}
-            </Row>
-          )}
+            <Title level={2} style={styles.quickCategoriesTitle}>
+              GIAO HOA TẬN NƠI TẠI KHU VỰC CẦN THƠ
+            </Title>
+            <div style={styles.quickCategoriesSubtitle}>
+              <Typography>Gọi cho shop: 0843.266.691 hoặc liên hệ qua</Typography>
+              <Button href="https://zalo.me/84843266691" target="_blank" rel="noopener noreferrer" style={{backgroundColor: themeColors.accent, color: 'white'}}>Zalo</Button>
+              <Button href="https://www.tiktok.com/@xng.hoa.online" target="_blank" rel="noopener noreferrer" style={{backgroundColor:"black",color:'white'}} icon={<TikTokOutlined />} />
+            </div>
+            {loadingQuickCategories ? (
+              <div style={{ textAlign: "center", padding: "50px" }}><Spin size="large" tip="Đang tải danh mục..." /></div>
+            ) : (
+              <Row gutter={[16, 24]}>
+                {quickCategoriesData.map((category) => (
+                  <Col key={category.id} xs={12} sm={8} md={4}>
+                    <RouterLink to={category.link} style={styles.categoryCircleLink}>
+                      <div style={styles.categoryCircleImageWrapper} className="category-circle-hover">
+                        <Image src={category.img} alt={category.label} style={styles.categoryCircleImage} fallback="https://placehold.co/120x120/eaf2ec/255F38?text=Image" preview={false} />
+                      </div>
+                      <Text style={styles.categoryCircleLabel}>{category.label}</Text>
+                    </RouterLink>
+                  </Col>
+                ))}
+              </Row>
+            )}
         </div>
 
-        {/* --- SẢN PHẨM CÓ SẴN TẠI SHOP (Lấy từ Firebase với status = 1) --- */}
-        <div
-          style={{
-            marginTop: "50px",
-            backgroundColor: "#fff",
-            padding: "20px",
-            borderRadius: "12px",
-            position: "relative",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "20px",
-            }}
-          >
-            <Title
-              level={3}
-              style={{
-                color: themeColors.primary,
-                margin: 0,
-                borderLeft: `5px solid ${themeColors.accent}`,
-                paddingLeft: "15px",
-              }}
-            >
+        {/* --- SẢN PHẨM CÓ SẴN TẠI SHOP --- */}
+        <div style={{ marginTop: "50px", backgroundColor: "#eaf2ec", padding: "20px", position: "relative" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+            <Title level={3} style={{ color: themeColors.primary, margin: 0, borderLeft: `5px solid ${themeColors.accent}`, paddingLeft: "15px" }}>
               SẢN PHẨM CÓ SẴN TẠI SHOP
             </Title>
-            <Link
-              href="/projects"
-              style={{ color: themeColors.accent, fontWeight: "500" }}
-            >
-              Xem tất cả <ArrowRightOutlined />
-            </Link>
           </div>
           {loadingAvailableProducts ? (
-            <div style={{ textAlign: "center", padding: "50px" }}>
-              <Spin size="large" tip="Đang tải sản phẩm có sẵn..." />
-            </div>
+            <div style={{ textAlign: "center", padding: "50px" }}><Spin size="large" tip="Đang tải sản phẩm có sẵn..." /></div>
           ) : availableProducts.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "20px" }}>
-              <Text>Không có sản phẩm nào có sẵn tại shop.</Text>
-            </div>
+            <div style={{ textAlign: "center", padding: "20px" }}><Text>Không có sản phẩm nào có sẵn tại shop.</Text></div>
           ) : (
-            <Carousel
-              {...featuredCarouselSettings}
-              className="featured-category-carousel"
-            >
+            <Carousel {...featuredCarouselSettings} className="featured-category-carousel">
               {availableProducts.map((product) => (
-                <div key={product.id} style={{ padding: "0 8px" }}>
-                  <Card
-                    style={{
-                      width: 200,
-                      display: "flex",
-                      flexDirection: "column",
-                      marginRight: 10,
-                    }} // Thêm display flex để căn chỉnh nội dung bên trong
-                    cover={
-                      <Image
-                        alt={product.name}
-                        src={product.image}
-                        preview={true}
-                        style={{
-                          objectFit: "contain",
-                          height: 150,
-                          borderBottom: "1px solid #e6e6e6",
-                        }} // Đảm bảo ảnh có kích thước cố định
-                      />
-                    }
-                  >
-                    <Paragraph
-                      style={{
-                        marginTop: "auto",
-                        fontSize: 16,
-                        textAlign: "center",
-                      }}
-                    >
-                      {" "}
-                      {/* Sử dụng marginTop: 'auto' để đẩy xuống dưới cùng */}
-                      {product.name}
-                    </Paragraph>
-
-                    <Paragraph
-                      style={{
-                        marginTop: "auto",
-                        fontSize: 16,
-                        fontWeight: "bold",
-                        color: "darkgreen",
-                        textAlign: "center",
-                      }}
-                    >
-                      {" "}
-                      {/* Sử dụng marginTop: 'auto' để đẩy xuống dưới cùng */}
-                      {product.price
-                        ? Number(product.price).toLocaleString("vi-VN", {
-                            style: "currency",
-                            currency: "VND",
-                          })
-                        : "Liên hệ"}
-                    </Paragraph>
-                    <Button
-                      style={{
-                        backgroundColor: themeColors.primary,
-                        color: "#fff",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      XEM CHI TIẾT
-                    </Button>
-                  </Card>
+                <div key={product.id} style={{padding: '5px'}}>
+                  <ProductCard product={product} />
                 </div>
               ))}
             </Carousel>
           )}
         </div>
 
-        {/* --- SECTION SẢN PHẨM LƯỚI (Lấy từ flowers state) --- */}
+        {/* --- SECTION TẤT CẢ SẢN PHẨM --- */}
         <div style={styles.categoryProductsGrid}>
+          <Title style={{ color: themeColors.primary, textAlign:'center', margin: 0, paddingLeft: "15px", marginBottom:'20px' }}>
+            Tất cả sản phẩm
+          </Title>
+          <Divider style={{borderTop:'2px solid #389234ff'}} />
+          
+          {/* Searchbox */}
+          <div className="searchBox">
+            <Card style={{ marginBottom: '25px', background: '#fff', border: '1px solid #e8e8e8' }}>
+                <Row gutter={[24, 24]} align="bottom">
+                    <Col xs={24} md={12}>
+                        <Text strong>Tìm theo tên hoa</Text>
+                        <Input.Search
+                            placeholder="Nhập tên hoa bạn muốn tìm..."
+                            allowClear
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            style={{marginTop: '8px'}}
+                            size="large"
+                        />
+                    </Col>
+                    <Col xs={24} md={12}>
+                        <Text strong>Lọc theo khoảng giá</Text>
+                        <Slider
+                            range
+                            min={0}
+                            max={maxPrice}
+                            step={10000}
+                            value={priceRange}
+                            onChange={setPriceRange}
+                            tooltip={{ formatter: value => `${value?.toLocaleString('vi-VN')} đ` }}
+                            style={{marginTop: '8px', marginBottom: 0}}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '-5px' }}>
+                            <Text type="secondary">{priceRange[0].toLocaleString('vi-VN')} đ</Text>
+                            <Text type="secondary">{priceRange[1].toLocaleString('vi-VN')} đ</Text>
+                        </div>
+                    </Col>
+                </Row>
+            </Card>
+          </div>
+          
           {loadingFlowers ? (
             <div style={{ textAlign: "center", padding: "50px" }}>
               <Spin size="large" tip="Đang tải danh sách hoa..." />
             </div>
           ) : (
-            <Row>
-              {flowers.map((product) => (
-                <Card
-                  key={product.id} // Add a unique key here
-                  style={{
-                    width: 200,
-                    display: "flex",
-                    flexDirection: "column",
-                    marginRight: 10,
-                  }} // Thêm display flex để căn chỉnh nội dung bên trong
-                  cover={
-                    <Image
-                      alt={product.name}
-                      src={product.image}
-                      preview={true}
-                      style={{
-                        objectFit: "contain",
-                        height: 150,
-                        borderBottom: "1px solid #e6e6e6",
-                      }} // Đảm bảo ảnh có kích thước cố định
-                    />
-                  }
-                >
-                  <Paragraph
-                    style={{
-                      marginTop: "auto",
-                      fontSize: 16,
-                      textAlign: "center",
-                    }}
-                  >
-                    {" "}
-                    {/* Sử dụng marginTop: 'auto' để đẩy xuống dưới cùng */}
-                    {product.name}
-                  </Paragraph>
-
-                  <Paragraph
-                    style={{
-                      marginTop: "auto",
-                      fontSize: 16,
-                      fontWeight: "bold",
-                      color: "darkgreen",
-                      textAlign: "center",
-                    }}
-                  >
-                    {" "}
-                    {/* Sử dụng marginTop: 'auto' để đẩy xuống dưới cùng */}
-                    {product.price
-                      ? Number(product.price).toLocaleString("vi-VN", {
-                          style: "currency",
-                          currency: "VND",
-                        })
-                      : "Liên hệ"}
-                  </Paragraph>
-                </Card>
-              ))}
+            <Row gutter={[24, 32]}>
+              {filteredFlowers.length > 0 ? (
+                filteredFlowers.map((product) => (
+                  <Col key={product.id} xs={12} sm={12} md={8} lg={6}>
+                      <ProductCard product={product} />
+                  </Col>
+                ))
+              ) : (
+                <Col span={24} style={{ textAlign: 'center', padding: '40px'}}>
+                    <Text>Không tìm thấy sản phẩm nào phù hợp với bộ lọc.</Text>
+                </Col>
+              )}
             </Row>
           )}
         </div>
       </div>
 
       <style>{`
-        @media (max-width: 991px) {
-          .desktop-only-column { display: none !important; }
-        }
         .slick-arrow {
             background-color: #fff !important;
             border: 1px solid #ddd;
             border-radius: 50%;
             color: #333 !important;
             z-index: 2;
-            width: 30px;
-            height: 30px;
-            display: flex;
+            width: 40px;
+            height: 40px;
+            display: flex !important;
             justify-content: center;
             align-items: center;
             cursor: pointer;
             top: 50%;
             transform: translateY(-50%);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
         }
-        .slick-arrow:before {
-            content: '';
+        .slick-arrow:hover {
+            background-color: ${themeColors.accent} !important;
+            color: #fff !important;
+            border-color: ${themeColors.accent};
         }
-        .slick-prev {
-            left: 10px;
-        }
-        .slick-next {
-            right: 10px;
-        }
-        .slick-prev:before {
-            content: '\\2039';
-            font-size: 20px;
-            color: #333;
-        }
-        .slick-next:before {
-            content: '\\203A';
-            font-size: 20px;
-            color: #333;
-        }
-        .ant-menu-item-selected {
-            background-color: ${themeColors.lightGreenBg} !important; color: ${themeColors.primary} !important; border-right: 3px solid ${themeColors.primary} !important;
-        }
-        .ant-menu-item-selected .ant-menu-item-icon { color: ${themeColors.primary} !important; }
-
+        .slick-arrow:before { content: ''; }
+        .slick-prev { left: -10px; }
+        .slick-next { right: -10px; }
+        .slick-prev .anticon, .slick-next .anticon { font-size: 18px; color: inherit; }
         .category-circle-hover:hover {
             transform: translateY(-5px);
             box-shadow: 0 8px 20px rgba(0,0,0,0.12);
         }
-
         .featured-category-carousel {
             position: relative;
-        }
-        .featured-category-carousel .slick-slide > div {
-            margin: 0 8px;
+            margin: 0 -12px;
         }
         .featured-category-carousel .slick-list {
-            margin: 0 -8px;
+            padding: 5px 0;
+        }
+        .featured-category-carousel .slick-slide > div {
+            padding: 0 12px;
+        }
+        .ant-card-hoverable:hover .product-image-hover-effect {
+            transform: scale(1.08);
         }
       `}</style>
-
-      {/* <PromotionalPopup/> */}
     </div>
   );
 };

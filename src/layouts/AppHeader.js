@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Row,
   Col,
@@ -13,208 +13,287 @@ import {
 import {
   PhoneOutlined,
   UserOutlined,
-  ShoppingCartOutlined,
   MenuOutlined,
   CaretDownOutlined,
   HomeOutlined,
+  ShoppingCartOutlined,
 } from "@ant-design/icons";
-import "./AppHeader.css";
+import "./AppHeader.css"; // Đảm bảo file CSS này tồn tại và được cấu hình đúng
 import { Link } from "react-router-dom";
-const { Text } = Typography;
+import { getListCategory } from "../function/CategoryAPI";
 
-// Bảng màu xanh lá cây mới
+const { Title, Text, Link: AntdLink } = Typography; // Đổi tên Link của Ant Design để tránh trùng với Link của react-router-dom
+
+// Bảng màu xanh lá cây dựa trên ảnh bạn cung cấp
 const themeColors = {
-  primary: "#123524", // Xanh lá cây chính cho thanh menu
-  primaryDark: "#18230F", // Xanh lá cây đậm hơn cho chữ
-  accent: "#1F7D53", // Màu nhấn
+  headerBg: "#3E6140", // Màu xanh lá cây đậm cho toàn bộ header
+  white: "#FFFFFF", // Màu trắng cho chữ và icon
+  searchBg: "#FFFFFF", // Màu nền cho ô tìm kiếm
+  // Các màu khác có thể giữ lại nếu được sử dụng ở các component khác
+  primary: "#4CAF50",
+  primaryDark: "#2E7D32",
+  accent: "#8BC34A",
+  background: "#f8f9f8",
+  lightGreenBg: "rgba(139, 195, 74, 0.1)",
+  categoryBarBg: "#E8F5E9", // Màu này có thể không cần nếu categoryItems là menu chính
 };
 
 // Cập nhật styles cho giao diện mới
 const styles = {
   headerWrapper: {
-    backgroundColor: "#fff",
+    backgroundColor: themeColors.headerBg, // Nền xanh lá cây cho toàn bộ header
     boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
   },
   mainHeader: {
-    padding: "20px 50px",
+    padding: "15px 50px", // Giảm padding trên dưới một chút
   },
-  navBar: {
-    backgroundColor: themeColors.primary, // Nền màu xanh lá đậm
-    padding: "10px", // Giữ padding để cân đối
+  logoText: {
+    color: themeColors.white,
+    fontWeight: "bold",
+    lineHeight: 1, // Đảm bảo căn chỉnh tốt
   },
-  // --- STYLE MỚI CHO THANH DANH MỤC ---
-  categoryBar: {
-    backgroundColor: "#fff",
-    borderTop: "1px solid #f0f0f0",
-    padding: "0 50px",
+  subLogoText: {
+    color: themeColors.white,
+    fontSize: "14px",
+    lineHeight: 1,
+  },
+  searchInput: {
+    backgroundColor: themeColors.searchBg, // Nền trắng cho ô tìm kiếm
+    borderRadius: "4px",
+  },
+  contactText: {
+    color: themeColors.white,
+  },
+  contactPhoneText: {
+    color: themeColors.white,
+    fontWeight: "bold",
+  },
+  iconStyle: {
+    fontSize: 24,
+    color: themeColors.white, // Icon màu trắng
+  },
+  badgeIconStyle: {
+    fontSize: 28,
+    color: themeColors.white, // Icon giỏ hàng màu trắng
+    cursor: "pointer",
+  },
+  // Style cho thanh danh mục (menu chính)
+  mainMenuRow: {
+    backgroundColor: themeColors.headerBg, // Nền xanh lá cây đậm cho menu chính
+    padding: "10px 0",
+    borderTop: `1px solid ${themeColors.white}20`, // Viền phân cách nhẹ
   },
   // Style cho nút menu trên mobile
   mobileMenuButton: {
     border: "none",
     background: "transparent",
     fontSize: "24px",
-    color: themeColors.primary,
+    color: themeColors.white, // Nút menu mobile màu trắng
   },
 };
 
-const AppHeader = ({ onMenuClick, categoryItems = [] }) => {
-  const [navItems, setNavItems] = useState([
+const AppHeader = ({ onMenuClick }) => {
+  // navItems này sẽ được thay thế bằng categoryItems để phù hợp với ảnh
+  // Tuy nhiên, nếu bạn muốn giữ navItems cho mục đích khác, có thể cân nhắc
+  // Hiện tại, tôi sẽ dùng categoryItems làm menu chính theo ảnh
+
+  const [categoryItems, setCategoryItems] = useState([]);
+
+  const defaultNavItems = [
     {
-      key: "link",
-      icon: <HomeOutlined />,
+      key: "link-home",
       label: <Link to={"/"}>TRANG CHỦ</Link>,
     },
     {
-      key: "1",
-      icon: <CaretDownOutlined />,
-      label: "HOA HỒNG",
-      children: [{ key: "10", label: "Option 10" }],
+      key: "tat-ca-san-pham",
+      label: <Link to={"/projects"}>TẤT CẢ SẢN PHẨM</Link>, // Giả định có trang /products
     },
     {
-      key: "sub1",
-      label: "HOA 8/3",
-      icon: <CaretDownOutlined />,
+      key: "bo-hoa-tuoi",
+      label: "BÓ HOA TƯƠI",
+      children: [{ key: "bo-hoa-tuoi-option1", label: "Option 1" }],
+    },
+    {
+      key: "ke-hoa-chuc-mung",
+      label: "KỆ HOA CHÚC MỪNG",
+      icon: <CaretDownOutlined />, // Có thể thêm icon nếu muốn
       children: [
-        { key: "3", label: "Option 3" },
-        { key: "4", label: "Option 4" },
-        {
-          key: "sub1-2",
-          label: "Submenu",
-          children: [
-            { key: "5", label: "Option 5" },
-            { key: "6", label: "Option 6" },
-          ],
-        },
+        { key: "ke-hoa-chuc-mung-option1", label: "Option 1" },
+        { key: "ke-hoa-chuc-mung-option2", label: "Option 2" },
       ],
     },
     {
-      key: "sub2",
-      label: "MÀU SẮC",
-      icon: <CaretDownOutlined />,
-      children: [
-        { key: "7", label: "Option 7" },
-        { key: "8", label: "Option 8" },
-        { key: "9", label: "Option 9" },
-        { key: "10", label: "Option 10" },
-      ],
+      key: "hoa-cuoi",
+      label: "HOA CƯỚI",
     },
-  ]);
+    {
+      key: "hoa-sap",
+      label: "HOA SÁP",
+    },
+    {
+      key: "tin-tuc",
+      label: "TIN TỨC",
+    },
+    {
+      key: "lien-he",
+      label: "LIÊN HỆ",
+    },
+  ];
+
+  // Sử dụng categoryItems nếu có, nếu không thì dùng defaultNavItems
+  const menuItems = categoryItems.length > 0 ? categoryItems : defaultNavItems;
+
+  const fetchData = async () => {
+    
+    const dataReturn = []
+    
+    const data = await getListCategory();
+    const formattedCategories = data.map((cat) => ({
+      id: cat.id,
+      img: cat.image,
+      label: cat.name.toUpperCase(),
+      link: `/projects/${cat.id}`,
+    }));
+
+    const dataDefault = [{
+      key: "link-home",
+      label: <Link to={"/"}>TRANG CHỦ</Link>,
+    },
+    {
+      key: "tat-ca-san-pham",
+      label: <Link to={"/projects"}>TẤT CẢ SẢN PHẨM</Link>, // Giả định có trang /products
+    },]
+    
+    dataDefault.map(ele=>{
+      dataReturn.push(ele);
+    })
+
+    
+    formattedCategories.map((ele, index) => {
+      const object = {
+        key: "hoa" + index,
+        label: <Link to={ele.link}>{ele.label}</Link>,
+      };
+      dataReturn.push(object);
+      
+    });
+
+
+
+    return dataReturn;
+  };
+
+  useEffect(() => {
+    
+    const getData = async () => {
+      setCategoryItems(await fetchData())
+    }
+
+    getData()
+
+  }, []);
 
   return (
     <div style={styles.headerWrapper}>
       {/* ===== DESKTOP HEADER ===== */}
-      <div className="desktop-header" style={{ display: "none" }}>
+      <div className="desktop-header">
         {/* Tầng 1: Logo, Search, Contact */}
         <div style={styles.mainHeader}>
-          <Row justify="space-between" align="middle" gutter={16}>
-            <Col lg={4} style={{display:'flex',alignItems:'center',justifyContent:'center'}}>
-              <Link to={'/'}>
-               <img
-                src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRSGRAuKy2Mn32VrWf6Sn_Xhi9fXvn2FcqFJg&s"
-                alt="Fresh Garden Logo"
-                style={{ height: "50px" }}
-              />
+          <Row justify="space-between" align="middle" gutter={24}>
+            <Col
+              lg={7}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-end",
+              }}
+            >
+              <Link to={"/"}>
+                <Title level={3} style={styles.logoText}>
+                  XƯỞNG HOA CỦA KHA
+                </Title>
+                <Text style={styles.subLogoText}>CHẤT LƯỢNG - ĐẸP</Text>
               </Link>
-             
-              <Button color="cyan" onClick={onMenuClick} icon={<MenuOutlined/>}/>
             </Col>
-            <Col lg={12}>
-              <Input.Search placeholder="Tìm kiếm sản phẩm..." size="large" />
+            <Col lg={10}>
+              <Input.Search
+                placeholder="Tìm sản phẩm..."
+                size="large"
+                style={styles.searchInput}
+                allowClear // Cho phép xóa nhanh nội dung
+              />
             </Col>
-            <Col lg={8}>
+            <Col lg={7}>
               <Row justify="end" align="middle" gutter={24}>
                 <Col>
                   <Space>
-                    <PhoneOutlined
-                      style={{ fontSize: 24, color: themeColors.accent }}
-                    />
+                    <PhoneOutlined style={styles.iconStyle} />
                     <div>
-                      <Text>Tư vấn và hỗ trợ</Text>
+                      <Text style={styles.contactText}>Gọi mua hàng</Text>
                       <br />
-                      <Text strong>0365.525.0680</Text>
+                      <Text style={styles.contactPhoneText}>0843.266.691</Text>
                     </div>
                   </Space>
                 </Col>
                 <Col>
                   <Space>
-                    <UserOutlined
-                      style={{ fontSize: 24, color: themeColors.accent }}
-                    />
+                    <UserOutlined style={styles.iconStyle} />
+                    <Text style={styles.contactText}>Tài khoản</Text>
                   </Space>
                 </Col>
-                <Col>
-                  <Badge count={5} size="small">
-                    <ShoppingCartOutlined
-                      style={{
-                        fontSize: 28,
-                        color: themeColors.accent,
-                        cursor: "pointer",
-                      }}
-                    />
+                {/* <Col>
+                  <Badge count={0} showZero size="small" offset={[-5, 5]}>
+                    <ShoppingCartOutlined style={styles.badgeIconStyle} />
                   </Badge>
-                </Col>
+                  <Text style={styles.contactText}>Giỏ Hàng</Text>
+                </Col> */}
               </Row>
             </Col>
           </Row>
         </div>
-        {/* 
+
+        {/* Tầng 2: Menu chính (dựa trên categoryItems hoặc defaultNavItems) */}
         <ConfigProvider
           theme={{
             components: {
               Menu: {
-                // Tùy chỉnh các token cho theme "dark"
-                darkItemBg: "#1F7D53", // Màu nền chung của Menu (màu xanh lá của bạn)
-                darkItemColor: "#FFFFFF", // Màu chữ ở trạng thái thường
-                darkItemHoverColor: "#FFFFFF", // Màu chữ khi di chuột qua
-                darkItemHoverBg: "#2E8B57", // Màu nền khi di chuột qua (một màu xanh lá hơi khác để tạo điểm nhấn)
-                darkItemSelectedColor: "#FFFFFF", // Màu chữ của item được chọn
-                darkItemSelectedBg: "#2a7c56", // Màu nền của item được chọn (đậm hơn một chút)
+                darkItemBg: themeColors.headerBg, // Nền chung của Menu
+                darkItemColor: themeColors.white, // Màu chữ thường
+                darkItemHoverColor: themeColors.white, // Màu chữ khi di chuột
+                darkItemHoverBg: themeColors.primaryDark, // Màu nền khi di chuột
+                darkItemSelectedColor: themeColors.white, // Màu chữ của item được chọn
+                darkItemSelectedBg: themeColors.primaryDark, // Màu nền của item được chọn
+                darkSubMenuItemBg: themeColors.primaryDark, // Màu nền của submenu
+                itemBorderRadius: 0, // Bỏ bo góc nếu không muốn
               },
             },
           }}
         >
-          <Row
-            align="middle"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: "#1F7D53",
-              padding:20
-            }}
-          >
+          <Row align="middle" style={styles.mainMenuRow}>
             <Menu
-              // Quan trọng: Thêm theme="dark" để áp dụng các token "dark..."
               theme="dark"
               mode="horizontal"
-              defaultSelectedKeys={["home"]}
-              items={navItems}
-              style={{ width: "100%", justifyContent: "center" }} // Style để menu dàn đều và đẹp hơn
-              className="green-theme-main-menu" // Quan trọng là có className này
+              defaultSelectedKeys={["link-home"]}
+              items={menuItems}
+              style={{
+                width: "100%",
+                justifyContent: "center",
+                borderBottom: "none",
+                backgroundColor: themeColors.headerBg,
+              }}
+              className="green-theme-main-menu"
             />
           </Row>
-        </ConfigProvider> */}
-
-        {/* Tầng 3: Menu danh mục */}
-        <div style={styles.categoryBar}>
-          <Row align="middle">
-            <Col span={24}>
-              <Menu
-                mode="horizontal"
-                items={categoryItems}
-                className="category-main-menu"
-              />
-            </Col>
-          </Row>
-        </div>
+        </ConfigProvider>
       </div>
 
       {/* ===== MOBILE HEADER ===== */}
       <div
         className="mobile-header"
         style={{
-          display: "none",
+          display: "none", // Sẽ được hiển thị bằng CSS media query
           padding: "10px 15px",
+          backgroundColor: themeColors.headerBg, // Nền xanh lá cây đậm cho mobile header
           borderBottom: "1px solid #f0f0f0",
         }}
       >
@@ -225,20 +304,15 @@ const AppHeader = ({ onMenuClick, categoryItems = [] }) => {
             </Button>
           </Col>
           <Col>
-           <Link to={'/'}>
-            <img
-              src="https://freshgarden.vn/template/images/logo-freshgarden.svg"
-              alt="Fresh Garden Logo"
-              style={{ height: "40px" }}
-            />
-           </Link>
-           
+            <Link to={"/"}>
+              <Title level={4} style={styles.logoText}>
+                XƯỞNG HOA CỦA KHA
+              </Title>
+            </Link>
           </Col>
           <Col>
-            <Badge count={5} size="small">
-              <ShoppingCartOutlined
-                style={{ fontSize: 24, color: themeColors.accent }}
-              />
+            <Badge count={0} showZero size="small">
+              <ShoppingCartOutlined style={styles.badgeIconStyle} />
             </Badge>
           </Col>
         </Row>
@@ -250,7 +324,39 @@ const AppHeader = ({ onMenuClick, categoryItems = [] }) => {
         @media (min-width: 992px) { .desktop-header { display: block !important; } }
         @media (max-width: 991px) { .mobile-header { display: block !important; } }
 
-        
+        /* Custom styles for Ant Design Menu in green theme */
+        .green-theme-main-menu.ant-menu-horizontal {
+          border-bottom: none; /* Remove default border */
+        }
+        .green-theme-main-menu.ant-menu-horizontal > .ant-menu-item,
+        .green-theme-main-menu.ant-menu-horizontal > .ant-menu-submenu {
+          padding: 0 20px; /* Tăng padding ngang cho các item */
+        }
+        /* Loại bỏ gạch chân khi chọn */
+        .green-theme-main-menu.ant-menu-horizontal > .ant-menu-item-selected::after,
+        .green-theme-main-menu.ant-menu-horizontal > .ant-menu-submenu-selected::after {
+          border-bottom: none !important; /* Đảm bảo không có gạch chân */
+        }
+        .green-theme-main-menu .ant-menu-submenu-title .anticon {
+          color: ${themeColors.white}; /* Màu icon trong submenu title */
+        }
+        .green-theme-main-menu .ant-menu-title-content {
+          color: ${themeColors.white}; /* Đảm bảo màu chữ của menu item là trắng */
+        }
+
+        /* Override Ant Design search input default styles */
+        .ant-input-search .ant-input-group-addon {
+          background-color: ${themeColors.searchBg} !important;
+          border-left: none !important;
+        }
+        .ant-input-search .ant-input-group-addon .ant-btn {
+          background-color: ${themeColors.searchBg} !important;
+          border: 1px solid #d9d9d9 !important; /* Giữ border cho nút search */
+          color: ${themeColors.primaryDark} !important; /* Màu icon search */
+        }
+        .ant-input-search .ant-input-group-addon .ant-btn:hover {
+          color: ${themeColors.primary} !important;
+        }
       `}</style>
     </div>
   );

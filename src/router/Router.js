@@ -13,6 +13,7 @@ import Category from "../adminpage/Category";
 import LoginAdmin from "../adminpage/LoginAdmin";
 import ProtectedRoute from "../adminpage/ProtectedRoute";
 
+
 const Router = () => {
   return (
     // 1. Bọc toàn bộ bằng BrowserRouter để kích hoạt routing
@@ -23,6 +24,8 @@ const Router = () => {
             - MainLayout sẽ luôn được render cho tất cả các route con bên trong nó.
             - Component của các route con (HomePage, ProjectsPage...) sẽ được render vào vị trí <Outlet /> trong MainLayout.
         */}
+    
+        
         <Route path="/admin/login" element={<LoginAdmin />} />
         <Route path="/admin" element={<ProtectedRoute />}>
           <Route path="/admin/main" element={<Admin />}>
@@ -34,7 +37,7 @@ const Router = () => {
           {/* 'index' có nghĩa là component này sẽ được render khi URL khớp chính xác với path của cha ('/') */}
           <Route index element={<HomePage />} />
           <Route path="projects" element={<ProjectsPage />} />
-          <Route path="projects/:projectsId" element={<ProjectsPage />} />
+          <Route path="projects/:categoryId" element={<ProjectsPage />} />
           {/* Đây là một dynamic route. ':projectId' sẽ là một tham số động. 
               Ví dụ: /projects/project-a, /projects/project-b 
           */}

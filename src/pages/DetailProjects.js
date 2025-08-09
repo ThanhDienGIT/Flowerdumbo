@@ -13,8 +13,23 @@ const { Title, Paragraph } = Typography;
 // ICON ZALO TÙY CHỈNH (copy từ ProjectsPage.js để đảm bảo có nếu chưa global)
 // =============================================================================
 const ZaloIcon = () => (
-    <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="1em" height="1em" viewBox="0 0 460.1 436.2" fill="currentColor">
-        <path d="M131.7,219.5h52.6v113.2h-52.6V219.5z M211.5,219.5h52.6v113.2h-52.6V219.5z M291.3,219.5h52.6v113.2h-52.6V219.5z M390.3,85.2C353.9,49.4,307,30,256,30c-52.1,0-99.8,19.9-136.6,56.6c-36.8,36.8-56.6,84.5-56.6,136.6c0,52.1,19.9,99.8,56.6,136.6c36.8,36.8,84.5,56.6,136.6,56.6c49.4,0,95-18.5,130.6-52.4c0,0,0,0,0,0c0.2-0.2,0.4-0.4,0.6-0.6c35.8-35.3,55.4-81.8,55.4-133.6C446.4,167.9,426.8,121.2,390.3,85.2z M357.1,335c-27.8,26.4-64.4,42.4-104.2,42.4c-81.2,0-147.1-65.9-147.1-147.1c0-81.2,65.9-147.1,147.1-147.1c38.7,0,74.4,15,101.1,41.7c26.7,26.7,41.7,62.4,41.7,101.1C398.8,272.2,382.9,308.8,357.1,335z"/>
+    <svg 
+        width="1em" 
+        height="1em" 
+        viewBox="0 0 40 40" 
+        fill="none" 
+        xmlns="http://www.w3.org/2000/svg"
+    >
+        {/* Phần nền màu xanh của logo */}
+        <path 
+            d="M40 28.8519C40 12.9178 27.0822 0 11.1481 0H7.14815C3.1933 0 0 3.1933 0 7.14815V11.1481C0 27.0822 12.9178 40 28.8519 40H32.8519C36.8067 40 40 36.8067 40 32.8519V28.8519Z" 
+            fill="#0068FF"
+        />
+        {/* Phần chữ Z màu trắng */}
+        <path 
+            d="M19.9959 18.0085L13.1228 24.8816H25.7533C26.5861 24.8816 27.2713 25.5668 27.2713 26.3996C27.2713 27.2324 26.5861 27.9176 25.7533 27.9176H11.2402C10.8238 27.9176 10.426 27.7523 10.1299 27.4562C9.83377 27.1601 9.66846 26.7623 9.66846 26.3459C9.66846 25.9295 9.83377 25.5317 10.1299 25.2356L17.0029 18.3626L11.7582 18.3626C10.9254 18.3626 10.2402 17.6774 10.2402 16.8446C10.2402 16.0118 10.9254 15.3266 11.7582 15.3266H26.7574C27.1738 15.3266 27.5716 15.4919 27.8677 15.788C28.1638 16.0841 28.3291 16.4819 28.3291 16.8983C28.3291 17.3147 28.1638 17.7125 27.8677 18.0085H19.9959Z" 
+            fill="white"
+        />
     </svg>
 );
 
@@ -159,10 +174,9 @@ function DetailProjects() {
         <Col xs={24} lg={12}>
           {/* Chỉ hiển thị một ảnh duy nhất từ flowerDetails.image */}
           <Image
-            width="100%"
             src={flowerDetails.image || 'https://via.placeholder.com/400?text=No+Image'} // Fallback nếu không có ảnh
             alt={flowerDetails.name}
-            style={{ borderRadius: '8px', objectFit: 'cover' }}
+            style={{ borderRadius: '8px', objectFit: 'contain'}}
           />
           {/* Đã bỏ phần hiển thị danh sách ảnh nhỏ */}
         </Col>
@@ -195,11 +209,12 @@ function DetailProjects() {
                 justifyContent: 'center',
                 marginRight:'10px'
               }}
-              shape="circle"
-              onClick={() => console.log('Đặt qua Zalo cho sản phẩm', flowerDetails.name)}
-              icon={<Icon component={ZaloIcon} style={{ fontSize: '20px' }} />}
+              shape='circle'
+              href="https://zalo.me/84843266691"
+              target="_blank"
             >
               {/* ZaloIcon đã được tích hợp bằng component Icon của Ant Design */}
+              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Icon_of_Zalo.svg/1024px-Icon_of_Zalo.svg.png" width={25} height={25} alt=''/>
             </Button>
 
             <Button
@@ -213,6 +228,8 @@ function DetailProjects() {
               }}
               shape="circle"
               onClick={() => console.log('Mua trên TikTok cho sản phẩm', flowerDetails.name)}
+              href="https://www.tiktok.com/@xng.hoa.online"
+              target="_blank"
             />
           </Space>
         </Col>

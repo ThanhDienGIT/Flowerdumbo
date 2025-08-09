@@ -1,4 +1,4 @@
-import { ref, onValue, push, get,set, remove, update } from "firebase/database";
+import { ref, onValue, push, get,set, remove, update,orderByChild,equalTo,query } from "firebase/database";
 import { database } from '../firebaseConfig/firebase-config';
 import CategoryDTO from '../DTO/CategoryDTO'; // Import CategoryDTO
 
@@ -161,41 +161,39 @@ const getFlowerClassificationsByCategoryId = async (categoryId) => {
  * @param {number} categoryId - ID của Category đang được thao tác.
  * @param {Array<number>} selectedFlowerIds - Mảng các ID hoa được chọn cho Category này.
  */
-const updateFlowerClassifications = async (categoryId, selectedFlowerIds) => {
+const updateFlowerClassifications = async (categoryId, selectedFlowers) => {
   try {
     const classificationRef = ref(database, 'FlowerClassification');
+    
+    // 1. Lấy tất cả các phân loại hiện có từ Firebase
     const snapshot = await get(classificationRef);
     let allClassifications = [];
-
     if (snapshot.exists()) {
       allClassifications = Object.values(snapshot.val());
     }
 
-    // Lọc ra các phân loại không thuộc về categoryId hiện tại,
-    // và chỉ giữ lại những phân loại không trùng với flowerId mới được chọn.
-    const otherClassifications = allClassifications.filter(item => 
-      item.categoryId !== categoryId && 
-      !selectedFlowerIds.includes(item.flowerId)
-    );
+    // 2. Lọc để giữ lại các phân loại KHÔNG thuộc về category đang chỉnh sửa.
+    const otherCategoriesClassifications = allClassifications.filter(item => item.categoryId !== categoryId);
 
-    // Tạo các phân loại mới từ selectedFlowerIds
-    const newClassifications = selectedFlowerIds.map(flowerId => ({
-      categoryId: categoryId,
-      flowerId: flowerId
+    // 3. [THAY ĐỔI CHÍNH Ở ĐÂY]
+    // Tạo danh sách phân loại mới cho category này.
+    // Với mỗi hoa được chọn, ta tạo một object mới bao gồm:
+    // - categoryId
+    // - Toàn bộ các trường dữ liệu của chính hoa đó (dùng toán tử spread `...flower`)
+    const newClassificationsForThisCategory = selectedFlowers.map(flower => ({
+      ...flower, // Trải toàn bộ các trường của hoa: id, name, price, image, etc.
+      categoryId: categoryId, // Thêm/Ghi đè trường categoryId
+      flowerId: flower.id // Thêm trường flowerId để truy vấn cho rõ ràng, mặc dù đã có id
     }));
 
-    // Kết hợp và đảm bảo tính duy nhất
-    // Sử dụng Set để loại bỏ các bản ghi trùng lặp (ví dụ: cùng categoryId và flowerId)
-    const combinedClassificationsMap = new Map();
-    [...otherClassifications, ...newClassifications].forEach(item => {
-      const key = `${item.categoryId}-${item.flowerId}`;
-      combinedClassificationsMap.set(key, item);
-    });
+    // 4. Kết hợp danh sách phân loại của các category khác với danh sách phân loại mới của category này.
+    const finalClassifications = [...otherCategoriesClassifications, ...newClassificationsForThisCategory];
 
-    const finalClassifications = Array.from(combinedClassificationsMap.values());
-
+    // 5. Ghi đè toàn bộ node 'FlowerClassification' bằng dữ liệu cuối cùng đã được kết hợp.
     await set(classificationRef, finalClassifications);
+    
     console.log(`Cập nhật phân loại hoa cho Category ${categoryId} thành công.`);
+
   } catch (error) {
     console.error(`Lỗi khi cập nhật phân loại hoa cho Category ${categoryId}:`, error);
     throw error;
@@ -208,7 +206,9 @@ const getCategoryById = (categoryId) => {
     onValue(categoryRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        resolve(new CategoryDTO(categoryId, data.name, data.image));
+
+        // Gọi DTO như một hàm và truyền vào một object
+        resolve(CategoryDTO({ id: categoryId, name: data.name, image: data.image, url: data.url }));
       } else {
         resolve(null); // Không tìm thấy category
       }
@@ -216,9 +216,35 @@ const getCategoryById = (categoryId) => {
       console.error(`Lỗi khi đọc category ${categoryId} từ Firebase:`, error);
       reject(error);
     }, {
-      onlyOnce: true // Chỉ đọc một lần, không lắng nghe thay đổi liên tục
+      onlyOnce: true 
     });
   });
 };
+
+const getFlowersByCategoryId = async (categoryId) => {
+  try {
+    // Chuyển đổi ID từ chuỗi (string) sang số (number)
+    const categoryIdAsNumber = Number(categoryId);
+
+    const classificationRef = ref(database, 'FlowerClassification');
+
+    // Sử dụng ID đã được chuyển đổi thành số để truy vấn
+    const classificationQuery = query(classificationRef, orderByChild('categoryId'), equalTo(categoryIdAsNumber));
+
+    const snapshot = await get(classificationQuery);
+
+    if (snapshot.exists()) {
+      const data = snapshot.val();
+      return Object.values(data); 
+    } else {
+      return [];
+    }
+  } catch (error) {
+    console.error(`Lỗi khi lấy danh sách hoa theo category ID ${categoryId}:`, error);
+    throw error;
+  }
+};
+
+
 // Chỉ export các hàm API, không export 'database'
-export { addCategory, getListCategory, editCategory, deleteCategory, getFlowerClassificationsByCategoryId, updateFlowerClassifications,getCategoryById };
+export { addCategory, getListCategory, editCategory, deleteCategory, getFlowerClassificationsByCategoryId, updateFlowerClassifications,getCategoryById,getFlowersByCategoryId };

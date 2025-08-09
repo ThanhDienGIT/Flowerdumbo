@@ -5,25 +5,25 @@ import { Button, Table, Modal, Form, Input, Space, notification, Popconfirm, Ima
 import { EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 
 // Import DTO và API cho Category
-import CategoryDTO from '../DTO/CategoryDTO'; 
-import { addCategory, getListCategory, editCategory, deleteCategory, getFlowerClassificationsByCategoryId, updateFlowerClassifications } from '../function/CategoryAPI'; 
+import CategoryDTO from '../DTO/CategoryDTO';
+import { addCategory, getListCategory, editCategory, deleteCategory, getFlowerClassificationsByCategoryId, updateFlowerClassifications } from '../function/CategoryAPI';
 
 // Import API cho Flower (để lấy danh sách tất cả các hoa)
-import { getListFlower } from '../function/FlowerAPI'; 
+import { getListFlower } from '../function/FlowerAPI';
 
-const initialCategoryState = CategoryDTO(); 
+const initialCategoryState = { ...CategoryDTO };
 
-function Category() { 
+function Category() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isModalVisible, setIsModalVisible] = useState(false); // Modal cho Thêm/Sửa Category
-  const [isFlowerSelectionModalVisible, setIsFlowerSelectionModalVisible] = useState(false); // Modal cho Thêm Hoa vào Category
-  const [editingCategory, setEditingCategory] = useState(null); // Category đang được chỉnh sửa
-  const [selectedCategoryForFlowers, setSelectedCategoryForFlowers] = useState(null); // Category đang được chọn để thêm hoa
-  const [allFlowers, setAllFlowers] = useState([]); // Danh sách tất cả các loại hoa
-  const [flowerSearchTerm, setFlowerSearchTerm] = useState(''); // Từ khóa tìm kiếm hoa
-  const [categoryForm] = Form.useForm(); // Form cho Category
-  const [flowerSelectionForm] = Form.useForm(); // Form cho chọn hoa
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isFlowerSelectionModalVisible, setIsFlowerSelectionModalVisible] = useState(false);
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [selectedCategoryForFlowers, setSelectedCategoryForFlowers] = useState(null);
+  const [allFlowers, setAllFlowers] = useState([]);
+  const [flowerSearchTerm, setFlowerSearchTerm] = useState('');
+  const [categoryForm] = Form.useForm();
+  const [flowerSelectionForm] = Form.useForm();
 
   // --- Functions for data fetching and manipulation (Category) ---
 
@@ -58,7 +58,7 @@ function Category() {
 
   useEffect(() => {
     fetchCategories();
-    fetchAllFlowers(); 
+    fetchAllFlowers();
   }, []);
 
   // --- Form Handling (Category) ---
@@ -131,27 +131,22 @@ function Category() {
     }
   };
 
-  // --- Flower Classification Logic (Đã điều chỉnh để hiển thị ảnh) ---
+  // --- Flower Classification Logic ---
 
   const handleAddFlowersToCategory = async (category) => {
     setSelectedCategoryForFlowers(category);
-    setFlowerSearchTerm(''); // Reset search term
-    flowerSelectionForm.resetFields(); // Reset form
+    setFlowerSearchTerm('');
+    flowerSelectionForm.resetFields();
 
-    // Lấy các hoa đã được phân loại cho category này từ Firebase
     const currentClassifications = await getFlowerClassificationsByCategoryId(category.id);
     const flowerIdsInCurrentCategory = new Set(currentClassifications.map(item => item.flowerId));
 
-    // Tạo một đối tượng để thiết lập giá trị ban đầu cho các checkbox của form
     const initialFlowerSelectionValues = {};
     allFlowers.forEach(flower => {
-      // Đặt giá trị `true` nếu hoa này đã được phân loại cho category hiện tại
       initialFlowerSelectionValues[`flower_${flower.id}`] = flowerIdsInCurrentCategory.has(flower.id);
     });
     
-    // Thiết lập giá trị ban đầu cho form
     flowerSelectionForm.setFieldsValue(initialFlowerSelectionValues);
-    
     setIsFlowerSelectionModalVisible(true);
   };
 
@@ -159,19 +154,22 @@ function Category() {
     setIsFlowerSelectionModalVisible(false);
     setSelectedCategoryForFlowers(null);
     setFlowerSearchTerm('');
-    flowerSelectionForm.resetFields(); 
+    flowerSelectionForm.resetFields();
   };
 
+  /**
+   * [THAY ĐỔI] Gửi toàn bộ object hoa được chọn thay vì chỉ ID
+   */
   const onFinishFlowerSelection = async (values) => {
     if (!selectedCategoryForFlowers) return;
 
-    // Lấy ra các flowerId đã được tích (checked) trong form
-    const newSelectedFlowerIds = allFlowers
-      .filter(flower => values[`flower_${flower.id}`]) // Lọc các hoa có checkbox được tích
-      .map(flower => flower.id);
+    // Lấy ra toàn bộ object của các hoa đã được tích (checked)
+    const selectedFlowers = allFlowers
+      .filter(flower => values[`flower_${flower.id}`]); // Lọc các hoa có checkbox được tích
 
     try {
-      await updateFlowerClassifications(selectedCategoryForFlowers.id, newSelectedFlowerIds);
+      // Gọi API với categoryId và mảng các object hoa đã chọn
+      await updateFlowerClassifications(selectedCategoryForFlowers.id, selectedFlowers);
       notification.success({
         message: 'Cập nhật phân loại hoa thành công',
         description: `Đã cập nhật hoa cho Category "${selectedCategoryForFlowers.name}".`,
@@ -186,7 +184,6 @@ function Category() {
     }
   };
 
-  // Lọc hoa theo từ khóa tìm kiếm
   const filteredFlowers = allFlowers.filter(flower =>
     flower.name.toLowerCase().includes(flowerSearchTerm.toLowerCase())
   );
@@ -206,12 +203,6 @@ function Category() {
       key: 'name',
       sorter: (a, b) => a.name.localeCompare(b.name),
     },
-    // {
-    //   title: 'URL',
-    //   dataIndex: 'url',
-    //   key: 'url',
-    //   render: (text) => <a href={text} target="_blank" rel="noopener noreferrer">{text}</a>,
-    // },
     {
       title: 'Image',
       dataIndex: 'image',
@@ -306,7 +297,6 @@ function Category() {
           <Form.Item
             name="url"
             label="URL"
-            // rules={[{ required: true, message: 'Vui lòng nhập URL!' }]}
           >
             <Input />
           </Form.Item>
@@ -338,7 +328,7 @@ function Category() {
         open={isFlowerSelectionModalVisible}
         onCancel={handleFlowerSelectionModalCancel}
         footer={null}
-        width={700} // Tăng chiều rộng modal để có chỗ cho ảnh
+        width={700}
       >
         <Form
           form={flowerSelectionForm}
@@ -353,50 +343,46 @@ function Category() {
             />
           </Form.Item>
 
+          {/* [THAY ĐỔI] Chuyển sang danh sách dọc, bỏ Row/Col */}
           <div style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid #d9d9d9', padding: '10px' }}>
             {filteredFlowers.length === 0 ? (
               <p>Không tìm thấy hoa nào.</p>
             ) : (
-              <Row gutter={[16, 8]}>
-                {filteredFlowers.map(flower => (
-                  <Col span={12} key={flower.id}> {/* Chia 2 cột */}
-                    <Form.Item 
-                      name={`flower_${flower.id}`} 
-                      valuePropName="checked" 
-                      noStyle 
-                      style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          marginBottom: '8px', // Thêm khoảng cách giữa các mục
-                          border: '1px solid #f0f0f0', // Thêm border nhẹ để dễ nhìn
-                          padding: '5px',
-                          borderRadius: '4px'
-                      }} 
-                    >
-                      <Checkbox style={{ whiteSpace: 'nowrap', flexShrink: 0 }}> {/* flexShrink: 0 để checkbox không co lại */}
-                          <Space> {/* Dùng Space để căn chỉnh ảnh và text */}
-                              <Image 
-                                  src={flower.image} 
-                                  alt={flower.name} 
-                                  width={40} // Kích thước ảnh nhỏ
-                                  height={40} 
-                                  style={{ objectFit: 'cover', borderRadius: '4px' }}
-                                  fallback="https://via.placeholder.com/40?text=No" // Ảnh thay thế
-                              />
-                              <span style={{ 
-                                  overflow: 'hidden', 
-                                  textOverflow: 'ellipsis', 
-                                  whiteSpace: 'nowrap', 
-                                  flexGrow: 1 // Cho phép text chiếm hết không gian còn lại
-                              }}>
-                                  {flower.name} (ID: {flower.id})
-                              </span>
-                          </Space>
-                      </Checkbox>
-                    </Form.Item>
-                  </Col>
-                ))}
-              </Row>
+              // Bỏ Row và Col, map trực tiếp ra danh sách các item
+              filteredFlowers.map(flower => (
+                // Dùng div để bao bọc và tạo style cho từng dòng
+                <div 
+                  key={flower.id} 
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    padding: '8px',
+                    borderBottom: '1px solid #f0f0f0' 
+                  }}
+                >
+                  <Form.Item
+                    name={`flower_${flower.id}`}
+                    valuePropName="checked"
+                    noStyle
+                  >
+                    <Checkbox>
+                      <Space>
+                        <Image
+                          src={flower.image}
+                          alt={flower.name}
+                          width={40}
+                          height={40}
+                          style={{ objectFit: 'cover', borderRadius: '4px' }}
+                          fallback="https://via.placeholder.com/40?text=No"
+                        />
+                        <span>
+                          {flower.name} (ID: {flower.id})
+                        </span>
+                      </Space>
+                    </Checkbox>
+                  </Form.Item>
+                </div>
+              ))
             )}
           </div>
 
