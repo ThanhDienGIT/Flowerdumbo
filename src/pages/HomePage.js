@@ -326,8 +326,21 @@ const HomePage = () => {
             </Title>
             <div style={styles.quickCategoriesSubtitle}>
               <Typography>Gọi cho shop: 0843.266.691 hoặc liên hệ qua</Typography>
-              <Button href="https://zalo.me/84843266691" target="_blank" rel="noopener noreferrer" style={{backgroundColor: themeColors.accent, color: 'white'}}>Zalo</Button>
-              <Button href="https://www.tiktok.com/@xng.hoa.online" target="_blank" rel="noopener noreferrer" style={{backgroundColor:"black",color:'white'}} icon={<TikTokOutlined />} />
+              <Button href="https://zalo.me/84843266691" target="_blank" rel="noopener noreferrer" shape="circle"
+              style={{
+                backgroundColor: '#0068ff',
+                color: 'white',
+                borderColor: '#0068ff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width:40,
+                height:40
+              }}
+              >
+              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Icon_of_Zalo.svg/1024px-Icon_of_Zalo.svg.png" width={20} height={20} alt=''/>
+              </Button>
+              <Button href="https://www.tiktok.com/@xng.hoa.online" shape="circle" target="_blank" rel="noopener noreferrer" style={{backgroundColor:"black",color:'white',width:40,height:40}} icon={<TikTokOutlined />} />
             </div>
             {loadingQuickCategories ? (
               <div style={{ textAlign: "center", padding: "50px" }}><Spin size="large" tip="Đang tải danh mục..." /></div>
