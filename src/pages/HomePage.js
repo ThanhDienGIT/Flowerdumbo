@@ -10,8 +10,8 @@ import {
   Image,
   Spin,
   Divider,
-  Input,   // Đã thêm
-  Slider,  // Đã thêm
+  Input,
+  Slider,
 } from "antd";
 import {
   LeftOutlined,
@@ -33,7 +33,7 @@ const themeColors = {
   lightGreenBg: "rgba(31, 125, 83, 0.05)",
 };
 
-// --- STYLES OBJECT (Giữ nguyên) ---
+// --- CẬP NHẬT GIAO DIỆN: Style cho card vuông và nhỏ gọn ---
 const styles = {
   pageContainer: {
     backgroundColor: themeColors.background,
@@ -90,29 +90,28 @@ const styles = {
     textAlign: "center",
   },
   categoryProductsGrid: {
-    padding: "20px",
+    padding: "10px 0", // Giảm padding
     marginTop:'20px',
   },
   productCard: {
     width: "100%",
     backgroundColor: "#fff",
-    border: "1px solid #e3e3e3",
-    borderRadius: '8px',
+    border: "1px solid #f0f0f0",
+    borderRadius: '8px', // Giảm bo góc cho hợp với card nhỏ
     overflow: "hidden",
     display: "flex",
     flexDirection: "column",
-    height: '100%', // Đảm bảo card có chiều cao đầy đủ
+    height: '100%',
   },
   productImage: {
-    padding:'20px',
     width: '100%',
-    height:'200px',
-    objectFit: "contain",
+    aspectRatio: '1 / 1', // Tỷ lệ vuông
+    objectFit: "cover", // Hiển thị toàn bộ ảnh
     transition: 'transform 0.3s ease',
-    border:"1px solid black"
+    padding: '5px', // Thêm một chút padding để ảnh không bị dính sát viền
   },
   productInfo: {
-    padding: "10px",
+    padding: "8px", // Giảm padding của phần text
     flexGrow: 1,
     display: "flex",
     flexDirection: "column",
@@ -122,9 +121,10 @@ const styles = {
   productName: {
     color: '#424242',
     fontWeight: "500",
-    marginBottom: "10px",
-    height: '3.2em',
-    lineHeight: '1.6em',
+    marginBottom: "8px",
+    fontSize: '13px', // Giảm cỡ chữ tên
+    height: '2.8em', // Điều chỉnh chiều cao cho 2 dòng
+    lineHeight: '1.4em',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     display: '-webkit-box',
@@ -139,7 +139,7 @@ const styles = {
   },
   productPrice: {
     color: themeColors.accent,
-    fontSize: "16px",
+    fontSize: "14px", // Giảm cỡ chữ giá
     fontWeight: 'bold',
     margin: 0,
   },
@@ -147,17 +147,30 @@ const styles = {
     backgroundColor: themeColors.primary,
     color: '#fff',
     border: 'none',
+    height: '28px', // Thu nhỏ nút
+    width: '28px',
   },
 };
+// --- KẾT THÚC CẬP NHẬT STYLE ---
 
-// --- HÀM HỖ TRỢ TÌM KIẾM ---
 const normalizeText = (text) => {
   if (!text) return '';
   return text
       .toString()
       .toLowerCase()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
+      .replace(/[\u0000-\u036f]/g, '');
+};
+
+const formatPriceWithMask = (price) => {
+    if (!price || typeof price !== 'number' || price <= 0) {
+      return "Liên hệ";
+    }
+    const formattedPrice = Number(price).toLocaleString('vi-VN');
+    const firstDigit = formattedPrice.charAt(0);
+    const restOfString = formattedPrice.substring(1);
+    const maskedRest = restOfString.replace(/\d/g, 'X');
+    return `${firstDigit}${maskedRest} đ`;
 };
 
 
@@ -169,14 +182,12 @@ const HomePage = () => {
   const [availableProducts, setAvailableProducts] = useState([]);
   const [loadingAvailableProducts, setLoadingAvailableProducts] = useState(true);
   
-  // State cho TẤT CẢ SẢN PHẨM và BỘ LỌC
   const [allFlowers, setAllFlowers] = useState([]);
   const [filteredFlowers, setFilteredFlowers] = useState([]);
   const [loadingFlowers, setLoadingFlowers] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [priceRange, setPriceRange] = useState([0, 1000000]);
   const [maxPrice, setMaxPrice] = useState(1000000);
-
 
   const featuredCarouselSettings = {
     dots: false,
@@ -196,7 +207,6 @@ const HomePage = () => {
 
   useEffect(() => {
     const fetchAllData = async () => {
-      // Tải danh mục nhanh
       try {
         setLoadingQuickCategories(true);
         const data = await getListCategory();
@@ -213,7 +223,6 @@ const HomePage = () => {
         setLoadingQuickCategories(false);
       }
 
-      // Tải sản phẩm có sẵn
       try {
         setLoadingAvailableProducts(true);
         const productsWithStatus1 = await getFlowersByStatus(1);
@@ -224,7 +233,6 @@ const HomePage = () => {
         setLoadingAvailableProducts(false);
       }
 
-      // Tải TẤT CẢ SẢN PHẨM
       try {
         setLoadingFlowers(true);
         const flowersData = await getListFlower();
@@ -248,7 +256,6 @@ const HomePage = () => {
     fetchAllData();
   }, []);
   
-  // useEffect để LỌC TẤT CẢ SẢN PHẨM
   useEffect(() => {
     let tempFlowers = [...allFlowers];
 
@@ -267,8 +274,6 @@ const HomePage = () => {
 
   }, [searchTerm, priceRange, allFlowers]);
 
-
-  // --- Reusable Product Card Component ---
   const ProductCard = ({ product }) => (
     <RouterLink to={`/detail/${product.id}`} style={{ display: 'block', height: '100%' }}>
         <Card
@@ -281,7 +286,7 @@ const HomePage = () => {
                     preview={false}
                     style={styles.productImage}
                     className="product-image-hover-effect"
-                    fallback="https://placehold.co/220x220/ffffff/c0c0c0?text=No+Image"
+                    fallback="https://placehold.co/200x200/ffffff/c0c0c0?text=No+Image"
                 />
             }
             bodyStyle={{ padding: 0, display: 'flex', flexGrow: 1 }}
@@ -292,12 +297,7 @@ const HomePage = () => {
                 </Paragraph>
                 <div style={styles.productFooter}>
                     <Paragraph style={styles.productPrice}>
-                        {product.price
-                            ? Number(product.price).toLocaleString("vi-VN", {
-                                style: "currency",
-                                currency: "VND",
-                            })
-                            : "Liên hệ"}
+                      {formatPriceWithMask(product.price)}
                     </Paragraph>
                     <Button
                         type="primary"
@@ -319,7 +319,6 @@ const HomePage = () => {
   return (
     <div style={styles.pageContainer}>
       <div style={styles.contentWrapper}>
-        {/* --- SECTION: GIAO HOA & DANH MỤC NHANH --- */}
         <div style={styles.quickCategoriesSection}>
             <Title level={2} style={styles.quickCategoriesTitle}>
               GIAO HOA TẬN NƠI TẠI KHU VỰC CẦN THƠ
@@ -360,7 +359,6 @@ const HomePage = () => {
             )}
         </div>
 
-        {/* --- SẢN PHẨM CÓ SẴN TẠI SHOP --- */}
         <div style={{ marginTop: "50px", backgroundColor: "#eaf2ec", padding: "20px", position: "relative" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
             <Title level={3} style={{ color: themeColors.primary, margin: 0, borderLeft: `5px solid ${themeColors.accent}`, paddingLeft: "15px" }}>
@@ -382,14 +380,12 @@ const HomePage = () => {
           )}
         </div>
 
-        {/* --- SECTION TẤT CẢ SẢN PHẨM --- */}
         <div style={styles.categoryProductsGrid}>
           <Title style={{ color: themeColors.primary, textAlign:'center', margin: 0, paddingLeft: "15px", marginBottom:'20px' }}>
             Tất cả sản phẩm
           </Title>
           <Divider style={{borderTop:'2px solid #389234ff'}} />
           
-          {/* Searchbox */}
           <div className="searchBox">
             <Card style={{ marginBottom: '25px', background: '#fff', border: '1px solid #e8e8e8' }}>
                 <Row gutter={[24, 24]} align="bottom">
@@ -430,10 +426,12 @@ const HomePage = () => {
               <Spin size="large" tip="Đang tải danh sách hoa..." />
             </div>
           ) : (
-            <Row gutter={[24, 32]}>
+            // --- CẬP NHẬT: Giảm khoảng cách (gutter) để card dày hơn ---
+            <Row gutter={[8, 16]}>
               {filteredFlowers.length > 0 ? (
                 filteredFlowers.map((product) => (
-                  <Col key={product.id} xs={12} sm={12} md={8} lg={6}>
+                  // --- CẬP NHẬT: 4 cột trên mọi kích thước màn hình ---
+                  <Col key={product.id} xs={6} sm={6} md={6} lg={6}>
                       <ProductCard product={product} />
                   </Col>
                 ))

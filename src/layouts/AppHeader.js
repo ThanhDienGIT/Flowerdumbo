@@ -209,6 +209,9 @@ const AppHeader = ({ onMenuClick }) => {
               }}
             >
               <Link to={"/"}>
+
+             
+
                 <Title level={3} style={styles.logoText}>
                   XƯỞNG HOA CỦA KHA
                 </Title>

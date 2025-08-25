@@ -12,6 +12,8 @@ import ListFlower from "../adminpage/ListFlower";
 import Category from "../adminpage/Category";
 import LoginAdmin from "../adminpage/LoginAdmin";
 import ProtectedRoute from "../adminpage/ProtectedRoute";
+import Setting from "../adminpage/Setting";
+import TestAPI from "../adminpage/TestAPI";
 
 
 const Router = () => {
@@ -31,6 +33,9 @@ const Router = () => {
           <Route path="/admin/main" element={<Admin />}>
             <Route path="/admin/main/listflower" element={<ListFlower />} />
             <Route path="/admin/main/category" element={<Category />} />
+            <Route path="/admin/main/setting" element={<Setting />} />
+            <Route path="/admin/main/test" element={<TestAPI />} />
+            
           </Route>
         </Route>
         <Route path="/" element={<MainLayout />}>
