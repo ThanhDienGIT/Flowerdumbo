@@ -9,7 +9,7 @@ const FlowerDTO = ({
   status,
   importDate,
   image,
-  idCategory, // <--- THÊM TRƯỜNG idCategory VÀO ĐÂY
+  categoryId, // <--- THÊM TRƯỜNG idCategory VÀO ĐÂY
 } = {}) => {
   return {
     id: id !== undefined ? id : null, // Mặc định ID là null nếu là mới
@@ -20,7 +20,7 @@ const FlowerDTO = ({
     status: status !== undefined ? status : 1, // Mặc định là có hàng (1)
     importDate: importDate || new Date().toISOString().split('T')[0],
     image: image || "",
-    idCategory: idCategory || null, // <--- ĐẶT GIÁ TRỊ MẶC ĐỊNH CHO idCategory
+    categoryId: categoryId || null, // <--- ĐẶT GIÁ TRỊ MẶC ĐỊNH CHO idCategory
   };
 };
 

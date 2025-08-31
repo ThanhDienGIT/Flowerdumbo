@@ -16,6 +16,7 @@ import {
   Upload,
   Row,
   Col,
+  Select, // <<<--- (1) IMPORT THÊM 'Select' TỪ ANTD
 } from "antd";
 import { EditOutlined, DeleteOutlined, InboxOutlined } from "@ant-design/icons";
 
@@ -27,6 +28,7 @@ import {
 } from "../function/FlowerAPI";
 import FlowerDTO from "../DTO/FlowerDTO";
 import { uploadImage } from "../function/CloudiaryAPI";
+import { getListCategory } from "../function/CategoryAPI";
 
 const initialFlowerState = FlowerDTO();
 
@@ -40,6 +42,7 @@ const getBase64 = (file) =>
 
 function ListFlower() {
   const [flowers, setFlowers] = useState([]);
+  const [categories, setCategories] = useState([]); // <<<--- (2) TẠO STATE MỚI ĐỂ LƯU DANH MỤC
   const [loading, setLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingFlower, setEditingFlower] = useState(null);
@@ -48,11 +51,10 @@ function ListFlower() {
   const [form] = Form.useForm();
 
   // --- GIẢI PHÁP TRIỆT ĐỂ: DÙNG useEffect ĐỂ QUẢN LÝ FORM ---
-  // Hook này sẽ chạy mỗi khi modal được mở/đóng hoặc khi có một bông hoa được chọn để sửa.
   useEffect(() => {
     if (isModalVisible) {
       if (editingFlower) {
-        // Chế độ SỬA: Lấy dữ liệu từ `editingFlower` và điền vào form.
+        // Chế độ SỬA:
         const initialFileList = editingFlower.image
           ? [
               {
@@ -65,29 +67,31 @@ function ListFlower() {
           : [];
         form.setFieldsValue({
           ...editingFlower,
+          // Giả sử đối tượng flower của bạn có 'categoryId'
+          categoryId: editingFlower.categoryId, 
           status: editingFlower.status === 1,
           image: { fileList: initialFileList },
         });
         setImageUrl(editingFlower.image);
       } else {
-        // Chế độ THÊM: Reset form về giá trị ban đầu.
+        // Chế độ THÊM:
         form.setFieldsValue({
           name: initialFlowerState.name,
           description: initialFlowerState.description,
           price: initialFlowerState.price,
           quantity: initialFlowerState.quantity,
           status: initialFlowerState.status === 1,
-          image: undefined, // Xóa giá trị trường ảnh
+          categoryId: undefined, // Xóa giá trị trường danh mục
+          image: undefined,
         });
         setImageUrl("");
       }
     } else {
-      // Khi modal đóng, reset mọi thứ.
+      // Khi modal đóng:
       form.resetFields();
       setImageUrl("");
     }
   }, [isModalVisible, editingFlower, form]);
-  // --- KẾT THÚC GIẢI PHÁP ---
 
   const fetchFlowers = async () => {
     setLoading(true);
@@ -95,18 +99,30 @@ function ListFlower() {
       const data = await getListFlower();
       setFlowers(data.map((flower) => ({ ...flower, key: flower.id })));
     } catch (err) {
-      notification.error({ message: "Lỗi tải dữ liệu" });
+      notification.error({ message: "Lỗi tải dữ liệu hoa" });
     } finally {
       setLoading(false);
     }
   };
 
+  // <<<--- (3) CẬP NHẬT HÀM fetchCategories ĐỂ SET STATE
+  const fetchCategories = async () => {
+    try {
+      const data = await getListCategory();
+      // Giả sử data trả về là một mảng các đối tượng category
+      // Ví dụ: [{ id: 1, name: 'Hoa bó' }, { id: 2, name: 'Hoa giỏ' }]
+      setCategories(data); 
+    } catch (err) {
+      notification.error({ message: "Lỗi tải dữ liệu danh mục" });
+    }
+  };
 
   useEffect(() => {
-    fetchFlowers();
+    fetchCategories(); // Tải danh mục
+    fetchFlowers(); // Tải danh sách hoa
   }, []);
 
-  // --- Các hàm handler giờ chỉ cần thay đổi state, useEffect sẽ lo phần còn lại ---
+  // --- Các hàm handler ---
   const handleAdd = () => {
     setEditingFlower(null);
     setIsModalVisible(true);
@@ -119,10 +135,11 @@ function ListFlower() {
 
   const handleModalCancel = () => {
     setIsModalVisible(false);
-    setEditingFlower(null); // Đảm bảo lần mở sau là form mới
+    setEditingFlower(null);
   };
 
   const onFinish = async (values) => {
+    // Giá trị 'categoryId' từ Select box sẽ có sẵn trong 'values'
     const processedValues = {
       ...values,
       status: values.status ? 1 : 0,
@@ -131,17 +148,14 @@ function ListFlower() {
         : new Date().toISOString().split("T")[0],
     };
 
+
     try {
-      await uploadImage(processedValues, editingFlower ? editingFlower : null,fetchFlowers,handleModalCancel);
-
-      // if (editingFlower) {
-
-      //   await editFlower(editingFlower.id, processedValues);
-      //   notification.success({ message: 'Cập nhật thành công' });
-      // } else {
-      //   await addFlower(processedValues);
-      //   notification.success({ message: 'Thêm mới thành công' });
-      // }
+      await uploadImage(
+        processedValues,
+        editingFlower ? editingFlower : null,
+        fetchFlowers,
+        handleModalCancel
+      );
     } catch (err) {
       notification.error({ message: "Thao tác thất bại" });
     }
@@ -154,7 +168,7 @@ function ListFlower() {
     } else if (!file) {
       setImageUrl("");
     }
-
+  
     const date = new Date();
     const fileName = `flower_${date.getFullYear()}${(date.getMonth() + 1)
       .toString()
@@ -185,7 +199,6 @@ function ListFlower() {
   };
 
   const columns = [
-    // ... Giữ nguyên phần columns của bạn ...
     {
       title: "STT",
       key: "stt",
@@ -199,9 +212,9 @@ function ListFlower() {
       render: (url) => (
         <Image
           src={url}
-          width={80}
-          height={80}
-          style={{ objectFit: "cover", borderRadius: 4 }}
+          width={160}
+          height={210}
+          style={{ objectFit: "cover", borderRadius: 15,border:'1px solid #ccc' }}
           fallback="https://via.placeholder.com/80?text=No+Image"
         />
       ),
@@ -212,32 +225,15 @@ function ListFlower() {
       dataIndex: "name",
       key: "name",
       sorter: (a, b) => a.name.localeCompare(b.name),
+      width: 300
     },
-    { title: "Mô Tả", dataIndex: "description", key: "description" },
+    { title: "Mô Tả", dataIndex: "description", key: "description", width: 400 },
     {
       title: "Giá",
       dataIndex: "price",
       key: "price",
       render: (price) => `${price ? price.toLocaleString() : 0} VNĐ`,
       sorter: (a, b) => a.price - b.price,
-    },
-    {
-      title: "Ngày Nhập",
-      dataIndex: "importDate",
-      key: "importDate",
-      render: (date) => new Date(date).toLocaleDateString(),
-      sorter: (a, b) => new Date(a.importDate) - new Date(b.importDate),
-    },
-    {
-      title: "Trạng Thái",
-      dataIndex: "status",
-      key: "status",
-      render: (s) => (s === 1 ? "Có hàng" : "Hết hàng"),
-      filters: [
-        { text: "Có hàng", value: 1 },
-        { text: "Hết hàng", value: 0 },
-      ],
-      onFilter: (value, record) => record.status === value,
     },
     {
       title: "Hành Động",
@@ -260,18 +256,25 @@ function ListFlower() {
     },
   ];
 
+  function removeVietnameseTones(str) {
+  if (!str) {
+    return "";
+  }
+  
+  str = str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  str = str.replace(/đ/g, "d").replace(/Đ/g, "D");
+  
+  return str;
+}
+
+
   return (
     <div style={{ padding: "20px" }}>
       <h1>Quản Lý Hoa</h1>
       <Button type="primary" onClick={handleAdd} style={{ marginBottom: 16 }}>
         Thêm Hoa Mới
       </Button>
-      <Table
-        columns={columns}
-        dataSource={flowers}
-        loading={loading}
-        bordered
-      />
+      <Table columns={columns} dataSource={flowers} loading={loading} bordered />
 
       <Modal
         title={editingFlower ? "Sửa Thông Tin Hoa" : "Thêm Hoa Mới"}
@@ -310,7 +313,7 @@ function ListFlower() {
                       alt="Xem trước"
                       style={{
                         width: "100%",
-                        height: "350px",
+                        height: "210px",
                         objectFit: "cover",
                         borderRadius: "8px",
                       }}
@@ -339,37 +342,50 @@ function ListFlower() {
               >
                 <Input />
               </Form.Item>
+              
+              {/* <<<--- (4) THÊM SELECT BOX DANH MỤC VÀO FORM --- */}
+              <Form.Item
+                name="categoryId"
+                label="Danh Mục"
+                rules={[{ required: true, message: "Vui lòng chọn danh mục!" }]}
+              >
+                <Select
+                  showSearch
+                  placeholder="Chọn một danh mục"
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    (option?.label ?? '').toLowerCase().includes(removeVietnameseTones(input.toLowerCase()))
+                  }
+                  options={categories.map(cat => ({
+                    value: cat.id,
+                    label: cat.name,
+                  }))}
+                />
+              </Form.Item>
+              {/* <<<--- KẾT THÚC PHẦN THÊM MỚI --- */}
+
               <Form.Item
                 name="description"
                 label="Mô Tả"
                 rules={[{ required: true, message: "Vui lòng nhập mô tả!" }]}
               >
-                <Input.TextArea rows={2} />
+                <Input.TextArea rows={8} />
               </Form.Item>
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    name="price"
-                    label="Giá"
-                    rules={[{ required: true, message: "Vui lòng nhập giá!" }]}
-                  >
-                    <InputNumber
+
+
+              <Form.Item
+                name="price"
+                label="Giá"
+                rules={[{ required: true, message: "Vui lòng nhập giá!" }]}
+              >
+                <InputNumber
                       style={{ width: "100%" }}
                       formatter={(v) =>
                         `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                       }
                     />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item name="quantity" label="Số Lượng">
-                    <InputNumber style={{ width: "100%" }} />
-                  </Form.Item>
-                </Col>
-              </Row>
-              <Form.Item name="status" valuePropName="checked">
-                <Checkbox>Có hàng sẵn tại shop</Checkbox>
               </Form.Item>
+          
             </Col>
           </Row>
           <Row justify="end" style={{ marginTop: 16 }}>
@@ -387,6 +403,3 @@ function ListFlower() {
 }
 
 export default ListFlower;
-
-
-

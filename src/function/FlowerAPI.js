@@ -80,7 +80,6 @@ const addFlower = async (flowerData) => {
     currentFlowers.push(newFlower);
     await set(flowersRef, currentFlowers); // Ghi đè toàn bộ mảng
 
-    console.log(`Thêm hoa thành công với ID: ${newId}`);
     return newFlower;
   } catch (error) {
     console.error("Lỗi khi thêm hoa:", error);
@@ -141,20 +140,39 @@ const editFlower = async (id, updatedObject) => {
  */
 const deleteFlower = async (id) => {
   try {
-    const flowersRef = ref(database, "flower");
-    const snapshot = await get(flowersRef);
+    // --- BƯỚC 1: Xóa các bản ghi liên quan trong FlowerClassification ---
+    const classificationRef = ref(database, 'FlowerClassification');
+    const classificationSnapshot = await get(classificationRef);
 
-    if (snapshot.exists()) {
-      let currentFlowers = Object.values(snapshot.val()); // Lấy mảng hoa hiện tại
+    if (classificationSnapshot.exists()) {
+      const allClassifications = Object.values(classificationSnapshot.val());
+      
+      // Lọc và giữ lại những bản ghi KHÔNG có flowerId trùng với id cần xóa
+      const updatedClassifications = allClassifications.filter(
+        (classification) => classification.flowerId !== id
+      );
+
+      // Ghi đè lại node FlowerClassification bằng mảng đã được lọc
+      await set(classificationRef, updatedClassifications);
+      console.log(`Đã xóa các phân loại liên quan đến flowerId: ${id}`);
+    } else {
+      console.log("Không có dữ liệu trong FlowerClassification, bỏ qua bước xóa liên quan.");
+    }
+
+    // --- BƯỚC 2: Xóa bản ghi gốc trong node "flower" (code gốc của bạn) ---
+    const flowersRef = ref(database, "flower");
+    const flowersSnapshot = await get(flowersRef);
+
+    if (flowersSnapshot.exists()) {
+      const currentFlowers = Object.values(flowersSnapshot.val());
       const initialLength = currentFlowers.length;
 
-      // Lọc ra các bông hoa không có ID trùng khớp.
-      // Lưu ý: Các ID còn lại sẽ không còn liên tiếp sau khi xóa.
-      let updatedFlowers = currentFlowers.filter((flower) => flower.id !== id);
+      // Lọc ra các bông hoa không có ID trùng khớp
+      const updatedFlowers = currentFlowers.filter((flower) => flower.id !== id);
 
       if (updatedFlowers.length < initialLength) {
-        // Kiểm tra xem có phần tử nào bị xóa không
-        await set(flowersRef, updatedFlowers); // Ghi đè toàn bộ mảng mới
+        // Ghi đè lại node "flower"
+        await set(flowersRef, updatedFlowers);
         console.log(`Xóa hoa với ID ${id} thành công.`);
         return true;
       } else {
@@ -166,7 +184,8 @@ const deleteFlower = async (id) => {
       return false;
     }
   } catch (error) {
-    console.error(`Lỗi khi xóa hoa với ID ${id}:`, error);
+    // Gộp chung thông báo lỗi
+    console.error(`Lỗi khi xóa hoa và các phân loại liên quan với ID ${id}:`, error);
     throw error;
   }
 };

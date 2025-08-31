@@ -21,7 +21,7 @@ const categoryMenuItems = [
 ];
 const mainNavItems = [
     { key: 'about', label: 'VỀ CHÚNG TÔI' },
-    { key: 'contact', label: 'LIÊN HỆ DALATFARM' },
+    { key: 'contact', label: 'LIÊN HỆ XƯỞNG HOA CỦA KHA' },
     { key: 'care', label: 'CHĂM SÓC KHÁCH HÀNG' },
 ];
 

@@ -199,6 +199,33 @@ const updateFlowerClassifications = async (categoryId, selectedFlowers) => {
     throw error;
   }
 };
+
+const addCategoryWhenAddFlower = async (flower,floweridSend) => {
+  try {
+    const classificationRef = ref(database, 'FlowerClassification');
+
+    const snapshot = await get(classificationRef);
+    let allClassifications = [];
+    if (snapshot.exists()) {
+      allClassifications = Object.values(snapshot.val());
+    }
+
+    const newId =
+      allClassifications.length > 0
+        ? Math.max(...allClassifications.map((f) => f.id || 0)) + 1
+        : 0;
+
+    flower.flowerId = floweridSend
+    flower.id = newId;
+    allClassifications.push(flower);
+    await set(classificationRef, allClassifications);
+  }catch (error) {
+    console.error("Lỗi khi thêm Category:", error);
+  }
+}
+
+
+
 // <--- THÊM EXPORT VÀO DÒNG NÀY --->
 const getCategoryById = (categoryId) => {
   return new Promise((resolve, reject) => {
@@ -246,5 +273,8 @@ const getFlowersByCategoryId = async (categoryId) => {
 };
 
 
+
 // Chỉ export các hàm API, không export 'database'
-export { addCategory, getListCategory, editCategory, deleteCategory, getFlowerClassificationsByCategoryId, updateFlowerClassifications,getCategoryById,getFlowersByCategoryId };
+export { addCategory, getListCategory, editCategory, deleteCategory, getFlowerClassificationsByCategoryId, updateFlowerClassifications,getCategoryById,getFlowersByCategoryId,
+  addCategoryWhenAddFlower
+ };

@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 // Import Layout và các Pages
 import MainLayout from "../layouts/MainLayout";
@@ -49,7 +49,7 @@ const Router = () => {
 
            <Route path="detail" element={<DetailProjects />} />
           <Route path="detail/:detailId" element={<DetailProjects />} />
-          <Route path="*" element={<NotFoundPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
         {/* Bạn cũng có thể định nghĩa các route không có MainLayout ở đây, ví dụ: trang login */}
         a{/* <Route path="/login" element={<LoginPage />} /> */}

@@ -42,6 +42,13 @@ const items = [
     "/admin/main/category",
     <AppstoreAddOutlined />
   ),
+
+  getItem(
+    "Cấu hình web",
+    "/admin/main/setting",
+    <SettingOutlined />
+  ),
+
   // getItem(
   //   "Cấu hình web",
   //   "/admin/main/setting",

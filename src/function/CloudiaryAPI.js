@@ -2,7 +2,7 @@ import { database } from "../firebaseConfig/firebase-config";
 import { ref, set } from "firebase/database";
 import axios from "axios";
 import { addFlower, editFlower, getListFlower } from "./FlowerAPI";
-import { addCategory, editCategory } from "./CategoryAPI";
+import { addCategory, editCategory, updateFlowerClassifications,addCategoryWhenAddFlower } from "./CategoryAPI";
 
 const CLOUD_NAME = "FlowerKey";
 const UPLOAD_PRESET = "ml_default";
@@ -29,13 +29,16 @@ export const uploadImage = async (data, editId, fetch, cancelModal) => {
           const object = {
             ...data,
             image: result.data.secure_url,
+            idImage: result.data.public_id
           };
 
           if (result) {
             if (editId == null) {
-              await addFlower(object);
+              const result2 = await addFlower(object);
+              await addCategoryWhenAddFlower(object,result2.id);
             } else {
               await editFlower(editId.id, object);
+              await updateFlowerClassifications(editId.id,[object]);
             }
           }
 
