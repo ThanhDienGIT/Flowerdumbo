@@ -3,6 +3,8 @@ import { Upload, Button, message, Image, Modal, Input, Card, Space, Row, Col, Pr
 import { UploadOutlined, EditOutlined, DeleteOutlined, CloudUploadOutlined, CloseCircleOutlined, InboxOutlined } from '@ant-design/icons';
 import axios from 'axios';
 
+
+
 // --- QUAN TRỌNG: Dán thông tin Cloudinary của bạn vào đây ---
 const CLOUDINARY_CLOUD_NAME = 'FlowerKey'; // Thay bằng Cloud Name của bạn
 const CLOUDINARY_UPLOAD_PRESET = 'ml_default'; // THAY BẰNG TÊN PRESET "UNSIGNED" CỦA BẠN
@@ -207,7 +209,10 @@ function TestAPI() {
                     placeholder="Nhập Public ID mới"
                 />
             </Modal>
+       
         </div>
+
+        
     );
 }
 

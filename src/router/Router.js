@@ -14,6 +14,8 @@ import LoginAdmin from "../adminpage/LoginAdmin";
 import ProtectedRoute from "../adminpage/ProtectedRoute";
 import Setting from "../adminpage/Setting";
 import TestAPI from "../adminpage/TestAPI";
+import FeedBack from "../pages/FeedBack";
+import FeedBackCustomer from "../adminpage/FeedBackCustomer";
 
 
 const Router = () => {
@@ -34,6 +36,7 @@ const Router = () => {
             <Route path="/admin/main/listflower" element={<ListFlower />} />
             <Route path="/admin/main/category" element={<Category />} />
             <Route path="/admin/main/setting" element={<Setting />} />
+             <Route path="/admin/main/feedback" element={<FeedBackCustomer />} />
             <Route path="/admin/main/test" element={<TestAPI />} />
             
           </Route>
@@ -47,12 +50,16 @@ const Router = () => {
               Ví dụ: /projects/project-a, /projects/project-b 
           */}
 
-           <Route path="detail" element={<DetailProjects />} />
-          <Route path="detail/:detailId" element={<DetailProjects />} />
+           
         <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
         {/* Bạn cũng có thể định nghĩa các route không có MainLayout ở đây, ví dụ: trang login */}
-        a{/* <Route path="/login" element={<LoginPage />} /> */}
+        {/* <Route path="/login" element={<LoginPage />} /> */}
+        <Route path="feedback" element={<FeedBack />} />
+            <Route path="detail" element={<DetailProjects />} />
+          <Route path="detail/:detailId" element={<DetailProjects />} />
+
+
       </Routes>
     </BrowserRouter>
   );

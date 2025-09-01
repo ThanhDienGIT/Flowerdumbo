@@ -1,22 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Layout, Menu, Card, Row, Col, Breadcrumb, ConfigProvider, Button, Space, Spin, Input, Slider, Typography, Divider } from 'antd';
+import { Layout, Card, Row, Col, Breadcrumb, ConfigProvider, Button, Space, Spin, Input, Radio, Checkbox, Typography, Divider, Select, Image } from 'antd'; // Thêm Image vào import
 import { TikTokOutlined } from '@ant-design/icons';
 import Icon from '@ant-design/icons';
 
 // Import API functions
 import { getFlowersByCategoryId, getListFlower } from '../function/FlowerAPI';
-import { getListCategory, getCategoryById } from '../function/CategoryAPI';
+import { getCategoryById } from '../function/CategoryAPI';
 
 // Import DTO để đảm bảo cấu trúc dữ liệu
 import FlowerCategoryDTO from '../DTO/FlowerCategoryDTO';
 
 const { Content, Sider } = Layout;
-const { Meta } = Card;
 const { Title, Text } = Typography;
+const { Option } = Select;
 
 // =============================================================================
-// ICON ZALO TÙY CHỈNH
+// ICON ZALO TÙY CHỈNH (Giữ nguyên)
 // =============================================================================
 const ZaloIcon = () => (
     <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="1em" height="1em" viewBox="0 0 460.1 436.2" fill="currentColor">
@@ -24,42 +24,171 @@ const ZaloIcon = () => (
     </svg>
 );
 
-// Hàm tiện ích để tìm kiếm không dấu và không phân biệt chữ hoa/thường
+// =============================================================================
+// HÀM TIỆN ÍCH (Giữ nguyên và bổ sung)
+// =============================================================================
 const normalizeText = (text) => {
     if (!text) return '';
     return text
         .toString()
         .toLowerCase()
-        .normalize('NFD') // Tách ký tự và dấu thành riêng biệt (e.g., 'á' -> 'a' + '´')
-        .replace(/[\u0300-\u036f]/g, ''); // Loại bỏ các dấu
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+};
+
+// HÀM MỚI: Định dạng giá tiền
+const formatPriceWithMask = (price) => {
+    if (price === undefined || price === null) return 'Liên hệ';
+    return price.toLocaleString('vi-VN') + ' đ';
 };
 
 
+// =============================================================================
+// COMPONENT CARD SẢN PHẨM MỚI
+// =============================================================================
+const ProductCard = ({ product }) => (
+    <Link to={`/detail/${product.id}`} style={{ textDecoration: 'none' }}>
+        <div style={{ textAlign: 'center' }}>
+            {/* --- ẢNH SẢN PHẨM --- */}
+            <Image
+                alt={product.name}
+                src={product.image}
+                style={{
+                    width: '100%',
+                    aspectRatio: '1 / 1',
+                    height: 'auto',
+                    objectFit: "cover",
+                    borderRadius: 8,
+                    border: '1px solid #e2e2e2ff',
+                }}
+                // Để có hiệu ứng hover, bạn cần thêm CSS cho class này trong file CSS của mình
+                // ví dụ: .product-image-hover-effect:hover { transform: scale(1.05); transition: transform 0.3s; }
+                className="product-image-hover-effect"
+                preview={false}
+            />
+
+            <div style={{ padding: '8px 4px' }}>
+                {/* --- MÃ SẢN PHẨM (cần có dữ liệu product.code) --- */}
+                {/* <Text style={{ fontSize: 14, color: '#00d084' }}>{product.code}</Text> */}
+                
+                {/* --- TÊN SẢN PHẨM --- */}
+                <Title level={5} style={{ margin: '4px 0', fontSize: 16, fontWeight: 500, color: '#067862', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {product.name}
+                </Title>
+                
+                {/* --- HIỂN THỊ GIÁ --- */}
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'baseline', gap: '8px', marginTop: '4px' }}>
+                    {/* Giá gốc (cần có dữ liệu product.originalPrice) */}
+                    {product.originalPrice && (
+                        <Text delete style={{ color: '#585858ff', fontSize: 14 }}>
+                            {formatPriceWithMask(product.originalPrice)}
+                        </Text>
+                    )}
+                    {/* Giá bán */}
+                    <Text style={{ color: '#5f5f5fff', fontSize: 16, fontWeight: 'bold' }}>
+                        {formatPriceWithMask(product.price)}
+                    </Text>
+                </div>
+            </div>
+        </div>
+    </Link>
+);
+
+
+// =============================================================================
+// COMPONENT BỘ LỌC (ĐÃ ĐƯỢC DI CHUYỂN RA NGOÀI)
+// =============================================================================
+const FilterSider = ({ searchTerm, setSearchTerm, selectedPrice, setSelectedPrice }) => (
+    <Sider
+        width={250}
+        breakpoint="lg"
+        collapsedWidth="0"
+        style={{
+            background: '#fff',
+            padding: '16px',
+            borderLeft: '1px solid #f0f0f0',
+            height: '100vh',
+            position: 'sticky',
+            top: 0,
+        }}
+    >
+        <Title level={4}>Lọc sản phẩm</Title>
+        <Divider />
+
+        {/* TÌM THEO TÊN */}
+        <Title level={5}>Tìm theo tên</Title>
+        <Input.Search
+            placeholder="Nhập tên hoa..."
+            allowClear
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ marginBottom: '24px' }}
+        />
+
+        {/* LỌC THEO GIÁ */}
+        <Title level={5}>Mức Giá</Title>
+        <Radio.Group 
+            onChange={(e) => setSelectedPrice(e.target.value)} 
+            value={selectedPrice}
+            style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
+        >
+            <Radio value="all">Tất cả</Radio>
+            <Radio value="0-500000">0 VND - 500.000 VND</Radio>
+            <Radio value="500000-1000000">500.000 VND - 1.000.000 VND</Radio>
+            <Radio value="1000000-1500000">1.000.000 VND - 1.500.000 VND</Radio>
+            <Radio value="1500000-2000000">1.500.000 VND - 2.000.000 VND</Radio>
+            <Radio value="2000000-4000000">2.000.000 VND - 4.000.000 VND</Radio>
+        </Radio.Group>
+        <Divider />
+
+        {/* LỌC MÀU SẮC (PLACEHOLDER) */}
+        <Title level={5}>Màu Sắc</Title>
+        <Checkbox.Group 
+            disabled 
+            style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
+        >
+            <Checkbox value="red">Đỏ</Checkbox>
+            <Checkbox value="pink">Hồng</Checkbox>
+            <Checkbox value="yellow">Vàng</Checkbox>
+            <Checkbox value="blue">Xanh dương</Checkbox>
+        </Checkbox.Group>
+        <Divider />
+
+        {/* LỌC NGUYÊN LIỆU (PLACEHOLDER) */}
+        <Title level={5}>Nguyên liệu</Title>
+        <Checkbox.Group 
+            disabled
+            style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
+        >
+            <Checkbox value="camtucau">Cẩm Tú Cầu</Checkbox>
+            <Checkbox value="hoalan">Hoa Lan</Checkbox>
+            <Checkbox value="hoacattuong">Hoa Cát Tường</Checkbox>
+            <Checkbox value="hoacuc">Hoa Cúc</Checkbox>
+        </Checkbox.Group>
+    </Sider>
+);
+
+
+// =============================================================================
+// COMPONENT CHÍNH CỦA TRANG
+// =============================================================================
 function ProjectsPage() {
     const { categoryId } = useParams();
     
     // State cho dữ liệu
-    const [products, setProducts] = useState([]); // Lưu danh sách sản phẩm ĐÃ LỌC để hiển thị
-    const [allProducts, setAllProducts] = useState([]); // Lưu danh sách sản phẩm GỐC (chưa lọc)
-    const [sidebarCategories, setSidebarCategories] = useState([]);
+    const [products, setProducts] = useState([]);
+    const [allProducts, setAllProducts] = useState([]);
     const [currentCategoryName, setCurrentCategoryName] = useState('Shop hoa');
 
     // State cho các bộ lọc
     const [searchTerm, setSearchTerm] = useState('');
-    const [priceRange, setPriceRange] = useState([0, 500000]);
-    const [maxPrice, setMaxPrice] = useState(500000);
+    const [selectedPrice, setSelectedPrice] = useState('all');
 
     // State cho trạng thái loading
     const [loadingProducts, setLoadingProducts] = useState(true);
-    const [loadingCategories, setLoadingCategories] = useState(true);
-
+    
     const themeConfig = {
         // ... theme config giữ nguyên
-    };
-
-    const handleContactClick = (e, platform, product) => {
-        e.preventDefault();
-        console.log(`Đang chuyển đến ${platform} cho sản phẩm: ${product.name}`);
     };
 
     // Effect để TẢI DỮ LIỆU GỐC từ API khi categoryId thay đổi
@@ -86,20 +215,12 @@ function ProjectsPage() {
                 }));
 
                 setAllProducts(sanitizedProducts);
-
-                // Tự động tính giá cao nhất để cập nhật cho Slider
-                if (sanitizedProducts.length > 0) {
-                    const max = Math.max(...sanitizedProducts.map(p => p.price || 0));
-                    const newMaxPrice = max > 0 ? max : 500000;
-                    setMaxPrice(newMaxPrice);
-                    setPriceRange([0, newMaxPrice]); // Reset khoảng giá về mặc định
-                } else {
-                    setMaxPrice(500000);
-                    setPriceRange([0, 500000]);
-                }
-
-                setSearchTerm(''); // Reset ô tìm kiếm khi đổi danh mục
                 setCurrentCategoryName(categoryDisplayName);
+                
+                // Reset bộ lọc khi đổi danh mục
+                setSearchTerm('');
+                setSelectedPrice('all');
+
             } catch (error) {
                 console.error("Lỗi khi tải danh sách hoa:", error);
                 setAllProducts([]);
@@ -126,118 +247,54 @@ function ProjectsPage() {
         }
 
         // 2. Lọc theo khoảng giá
-        productsToFilter = productsToFilter.filter(product => 
-            (product.price || 0) >= priceRange[0] && (product.price || 0) <= priceRange[1]
-        );
+        if (selectedPrice && selectedPrice !== 'all') {
+            const [min, max] = selectedPrice.split('-').map(Number);
+            productsToFilter = productsToFilter.filter(product => {
+                const price = product.price || 0;
+                // Nếu max không tồn tại (ví dụ "2000000-Infinity"), chỉ cần kiểm tra min
+                if (isNaN(max)) {
+                    return price >= min;
+                }
+                return price >= min && price <= max;
+            });
+        }
+        
+        // CÁC BỘ LỌC KHÁC CÓ THỂ THÊM VÀO ĐÂY
 
-        setProducts(productsToFilter); // Cập nhật danh sách để hiển thị
-    }, [searchTerm, priceRange, allProducts]);
+        setProducts(productsToFilter);
+    }, [searchTerm, selectedPrice, allProducts]);
 
-
-    // Effect để tải danh mục cho sidebar (Giữ nguyên)
-    useEffect(() => {
-        const fetchCategories = async () => {
-            setLoadingCategories(true);
-            try {
-                const categories = await getListCategory();
-                const allFlowersItem = {
-                    key: 'all',
-                    label: <Link to="/projects">TẤT CẢ HOA</Link>,
-                };
-                const menuItems = categories.map(cat => ({
-                    key: cat.id,
-                    label: <Link to={`/projects/${cat.id}`}>{cat.name.toUpperCase()}</Link>,
-                }));
-                setSidebarCategories([allFlowersItem, ...menuItems]);
-            } catch (error) {
-                console.error("Lỗi khi tải danh mục sidebar:", error);
-                setSidebarCategories([]);
-            } finally {
-                setLoadingCategories(false);
-            }
-        };
-        fetchCategories();
-    }, []);
 
     return (
         <ConfigProvider theme={themeConfig}>
-            <style>{`
-                /* ... CSS của bạn ... */
-            `}</style>
-            
             <Layout style={{ minHeight: '100vh', backgroundColor: '#fff' }}>
-                <Sider
-                    width={180}
-                    breakpoint="lg"
-                    collapsedWidth="0"
-                    style={{
-                        background: '#fff',
-                        borderRight: '1px solid #f0f0f0',
-                        position: 'sticky',
-                        top: 0,
-                        height: '100vh',
-                    }}
-                >
-                    <div style={{ padding: '16px', textAlign: 'center' }}>
-                        <h2 style={{ color: '#4A634A', fontSize: '16px' }}>DANH MỤC</h2>
-                    </div>
-                    {loadingCategories ? (
-                        <div style={{ textAlign: 'center', padding: '20px' }}>
-                            <Spin size="small" />
-                        </div>
-                    ) : (
-                        <Menu
-                            mode="inline"
-                            selectedKeys={[categoryId || 'all']}
-                            style={{ borderRight: 0 }}
-                            items={sidebarCategories}
-                        />
-                    )}
-                </Sider>
                 <Layout style={{ padding: '0 16px 16px', backgroundColor: '#fff' }}>
                     <Breadcrumb style={{ margin: '16px 0' }}>
                         <Breadcrumb.Item><Link to="/">Trang chủ</Link></Breadcrumb.Item>
-                        <Breadcrumb.Item><Link to="/projects">Shop hoa</Link></Breadcrumb.Item>
+                        <Breadcrumb.Item><Link to="/projects">Bộ sưu tập</Link></Breadcrumb.Item>
                         <Breadcrumb.Item>{currentCategoryName}</Breadcrumb.Item>
                     </Breadcrumb>
                     
-                    {/* SEARCH BOXX */}
-                    <div className='searchBox'>
-                        <Card style={{ marginBottom: '20px' }}>
-                            <Row gutter={[24, 24]} align="bottom">
-                                <Col xs={24} md={12}>
-                                    <Title level={5} style={{ margin: 0, marginBottom: '8px' }}>Tìm theo tên hoa</Title>
-                                    <Input.Search
-                                        placeholder="Nhập tên hoa..."
-                                        allowClear
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                    />
-                                </Col>
-                                <Col xs={24} md={12}>
-                                    <Title level={5} style={{ margin: 0, marginBottom: '8px' }}>Lọc theo khoảng giá</Title>
-                                    <Slider
-                                        range
-                                        min={0}
-                                        max={maxPrice}
-                                        step={10000}
-                                        value={priceRange}
-                                        onChange={setPriceRange}
-                                        tooltip={{ formatter: value => `${value?.toLocaleString('vi-VN')} đ` }}
-                                    />
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <Text type="secondary">{priceRange[0].toLocaleString('vi-VN')} đ</Text>
-                                        <Text type="secondary">{priceRange[1].toLocaleString('vi-VN')} đ</Text>
-                                    </div>
-                                </Col>
-                            </Row>
-                        </Card>
-                    </div>
+                    {/* Phần tiêu đề và sắp xếp */}
+                    <Row justify="space-between" align="middle" style={{ marginBottom: '20px' }}>
+                        <Col>
+                            <Title level={2} style={{ margin: 0 }}>
+                                {currentCategoryName}
+                            </Title>
+                        </Col>
+                        <Col>
+                            <Space>
+                                <Text>Sắp xếp:</Text>
+                                <Select defaultValue="banchay" style={{ width: 150 }}>
+                                    <Option value="banchay">Mẫu hoa bán chạy</Option>
+                                    <Option value="thapcao">Giá: Thấp đến cao</Option>
+                                    <Option value="caothap">Giá: Cao đến thấp</Option>
+                                </Select>
+                            </Space>
+                        </Col>
+                    </Row>
 
-
-                    <Content
-                        style={{ padding: 12, margin: 0, minHeight: 280, background: '#f9f9f9' }}
-                    >
+                    <Content style={{ minHeight: 280 }}>
                         {loadingProducts ? (
                             <div style={{ textAlign: 'center', padding: '50px' }}>
                                 <Spin size="large" tip="Đang tải sản phẩm..." />
@@ -246,55 +303,13 @@ function ProjectsPage() {
                             <Row gutter={[16, 24]}>
                                 {products.length === 0 ? (
                                     <Col span={24} style={{ textAlign: 'center', padding: '50px' }}>
-                                        <p>Không có sản phẩm nào phù hợp.</p>
+                                        <p>Không có sản phẩm nào phù hợp với tiêu chí của bạn.</p>
                                     </Col>
                                 ) : (
                                     products.map((product) => (
-                                        <Col key={product.id || product.name} xs={24} sm={12} md={8} lg={6}>
-                                            <Link to={`/detail/${product.id}`}>
-                                                <Card
-                                                    hoverable
-                                                    cover={<img alt={product.name} src={product.image} style={{ height: 200, objectFit: 'contain',borderBottom:'1px solid black',padding:2}} />}
-                                                    bodyStyle={{ padding: '12px' }}
-                                                >
-                                                    <Meta
-                                                        title={<span style={{ fontWeight: 'bold', fontSize: '14px' }}>{product.name}</span>}
-                                                        description={<span style={{ fontSize: '12px', color: 'rgba(0,0,0,0.65)' }}>{product.description}</span>}
-                                                    />
-                                                    <div style={{
-                                                        display: 'flex',
-                                                        justifyContent: 'space-between',
-                                                        alignItems: 'center',
-                                                        marginTop: '10px'
-                                                    }}>
-                                                        <span style={{
-                                                            fontSize: '16px',
-                                                            fontWeight: 'bold',
-                                                            color: '#4A634A',
-                                                        }}>
-                                                            {product.price ? product.price.toLocaleString('vi-VN') + ' đ' : 'Liên hệ'}
-                                                        </span>
-                                                        <Space>
-                                                            <Button
-                                                                shape="circle"
-                                                                size="small"
-                                                                onClick={(e) => handleContactClick(e, 'Zalo', product)}
-                                                                icon={<Icon component={ZaloIcon} style={{ fontSize: '14px' }}/>}
-                                                                style={{ backgroundColor: '#0068ff', color: 'white', borderColor: '#0068ff' }}
-                                                                className="pulse-glow-effect"
-                                                            />
-                                                            <Button
-                                                                shape="circle"
-                                                                size="small"
-                                                                icon={<TikTokOutlined />}
-                                                                onClick={(e) => handleContactClick(e, 'TikTok', product)}
-                                                                style={{ backgroundColor: '#222', color: 'white', borderColor: '#222' }}
-                                                                className="pulse-glow-effect"
-                                                            />
-                                                        </Space>
-                                                    </div>
-                                                </Card>
-                                            </Link>
+                                        // THAY THẾ CARD CŨ BẰNG ProductCard MỚI
+                                        <Col key={product.id || product.name} xs={8} sm={8} md={8} lg={6}>
+                                            <ProductCard product={product} />
                                         </Col>
                                     ))
                                 )}
@@ -302,6 +317,14 @@ function ProjectsPage() {
                         )}
                     </Content>
                 </Layout>
+                
+                {/* SIDER BỘ LỌC BÊN PHẢI (đã truyền props vào) */}
+                <FilterSider 
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
+                    selectedPrice={selectedPrice}
+                    setSelectedPrice={setSelectedPrice}
+                />
             </Layout>
         </ConfigProvider>
     );

@@ -29,6 +29,8 @@ import {
 import FlowerDTO from "../DTO/FlowerDTO";
 import { uploadImage } from "../function/CloudiaryAPI";
 import { getListCategory } from "../function/CategoryAPI";
+import JoditWrapper from "../components/JoditWrapper";
+
 
 const initialFlowerState = FlowerDTO();
 
@@ -68,7 +70,7 @@ function ListFlower() {
         form.setFieldsValue({
           ...editingFlower,
           // Giả sử đối tượng flower của bạn có 'categoryId'
-          categoryId: editingFlower.categoryId, 
+          categoryId: editingFlower.categoryId,
           status: editingFlower.status === 1,
           image: { fileList: initialFileList },
         });
@@ -111,7 +113,7 @@ function ListFlower() {
       const data = await getListCategory();
       // Giả sử data trả về là một mảng các đối tượng category
       // Ví dụ: [{ id: 1, name: 'Hoa bó' }, { id: 2, name: 'Hoa giỏ' }]
-      setCategories(data); 
+      setCategories(data);
     } catch (err) {
       notification.error({ message: "Lỗi tải dữ liệu danh mục" });
     }
@@ -147,8 +149,7 @@ function ListFlower() {
         ? editingFlower.importDate
         : new Date().toISOString().split("T")[0],
     };
-
-
+    
     try {
       await uploadImage(
         processedValues,
@@ -168,7 +169,7 @@ function ListFlower() {
     } else if (!file) {
       setImageUrl("");
     }
-  
+
     const date = new Date();
     const fileName = `flower_${date.getFullYear()}${(date.getMonth() + 1)
       .toString()
@@ -214,7 +215,11 @@ function ListFlower() {
           src={url}
           width={160}
           height={210}
-          style={{ objectFit: "cover", borderRadius: 15,border:'1px solid #ccc' }}
+          style={{
+            objectFit: "cover",
+            borderRadius: 15,
+            border: "1px solid #ccc",
+          }}
           fallback="https://via.placeholder.com/80?text=No+Image"
         />
       ),
@@ -225,9 +230,14 @@ function ListFlower() {
       dataIndex: "name",
       key: "name",
       sorter: (a, b) => a.name.localeCompare(b.name),
-      width: 300
+      width: 300,
     },
-    { title: "Mô Tả", dataIndex: "description", key: "description", width: 400 },
+    {
+      title: "Mô Tả",
+      dataIndex: "description",
+      key: "description",
+      width: 400,
+    },
     {
       title: "Giá",
       dataIndex: "price",
@@ -257,16 +267,15 @@ function ListFlower() {
   ];
 
   function removeVietnameseTones(str) {
-  if (!str) {
-    return "";
-  }
-  
-  str = str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  str = str.replace(/đ/g, "d").replace(/Đ/g, "D");
-  
-  return str;
-}
+    if (!str) {
+      return "";
+    }
 
+    str = str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    str = str.replace(/đ/g, "d").replace(/Đ/g, "D");
+
+    return str;
+  }
 
   return (
     <div style={{ padding: "20px" }}>
@@ -274,14 +283,19 @@ function ListFlower() {
       <Button type="primary" onClick={handleAdd} style={{ marginBottom: 16 }}>
         Thêm Hoa Mới
       </Button>
-      <Table columns={columns} dataSource={flowers} loading={loading} bordered />
+      <Table
+        columns={columns}
+        dataSource={flowers}
+        loading={loading}
+        bordered
+      />
 
       <Modal
         title={editingFlower ? "Sửa Thông Tin Hoa" : "Thêm Hoa Mới"}
         open={isModalVisible}
         onCancel={handleModalCancel}
         footer={null}
-        width={720}
+        width={'100%'}
       >
         <Form
           form={form}
@@ -290,7 +304,7 @@ function ListFlower() {
           style={{ marginTop: 24 }}
         >
           <Row gutter={24}>
-            <Col span={10}>
+            <Col span={8}>
               <Form.Item
                 name="image"
                 label="Hình Ảnh"
@@ -312,7 +326,7 @@ function ListFlower() {
                       src={imageUrl}
                       alt="Xem trước"
                       style={{
-                        width: "100%",
+                        width: "50%",
                         height: "210px",
                         objectFit: "cover",
                         borderRadius: "8px",
@@ -334,7 +348,7 @@ function ListFlower() {
                 </Upload.Dragger>
               </Form.Item>
             </Col>
-            <Col span={14}>
+            <Col span={6}>
               <Form.Item
                 name="name"
                 label="Tên Hoa"
@@ -342,7 +356,7 @@ function ListFlower() {
               >
                 <Input />
               </Form.Item>
-              
+
               {/* <<<--- (4) THÊM SELECT BOX DANH MỤC VÀO FORM --- */}
               <Form.Item
                 name="categoryId"
@@ -354,9 +368,11 @@ function ListFlower() {
                   placeholder="Chọn một danh mục"
                   optionFilterProp="children"
                   filterOption={(input, option) =>
-                    (option?.label ?? '').toLowerCase().includes(removeVietnameseTones(input.toLowerCase()))
+                    (option?.label ?? "")
+                      .toLowerCase()
+                      .includes(removeVietnameseTones(input.toLowerCase()))
                   }
-                  options={categories.map(cat => ({
+                  options={categories.map((cat) => ({
                     value: cat.id,
                     label: cat.name,
                   }))}
@@ -364,28 +380,30 @@ function ListFlower() {
               </Form.Item>
               {/* <<<--- KẾT THÚC PHẦN THÊM MỚI --- */}
 
-              <Form.Item
-                name="description"
-                label="Mô Tả"
-                rules={[{ required: true, message: "Vui lòng nhập mô tả!" }]}
-              >
-                <Input.TextArea rows={8} />
-              </Form.Item>
-
-
+             
               <Form.Item
                 name="price"
                 label="Giá"
                 rules={[{ required: true, message: "Vui lòng nhập giá!" }]}
               >
                 <InputNumber
-                      style={{ width: "100%" }}
-                      formatter={(v) =>
-                        `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                      }
-                    />
+                  style={{ width: "100%" }}
+                  formatter={(v) =>
+                    `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                  }
+                />
               </Form.Item>
-          
+            </Col>
+
+            <Col span={10}>
+             <Form.Item
+                name="description"
+                label="Mô Tả"
+                rules={[{ required: true, message: "Vui lòng nhập mô tả!" }]}
+              >
+                <JoditWrapper placeholder={"Nhập mô tả"} />
+              </Form.Item>
+
             </Col>
           </Row>
           <Row justify="end" style={{ marginTop: 16 }}>

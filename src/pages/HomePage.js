@@ -42,7 +42,7 @@ const styles = {
   contentWrapper: {
     maxWidth: "1200px",
     margin: "0 auto",
-    padding: "30px 15px",
+    padding: "0px 30px",
   },
   quickCategoriesSection: {
     marginTop: "30px",
@@ -156,7 +156,8 @@ const normalizeText = (text) => {
     .toString()
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0000-\u036f]/g, "");
+    .replace(/[\u0300-\u036f]/g, "") // Sửa regex để chỉ xóa dấu
+    .replace(/đ/g, "d"); // Thêm dòng này để xử lý chữ "đ"
 };
 
 const formatPriceWithMask = (price) => {
@@ -166,8 +167,7 @@ const formatPriceWithMask = (price) => {
   const formattedPrice = Number(price).toLocaleString("vi-VN");
   const firstDigit = formattedPrice.charAt(0);
   const restOfString = formattedPrice.substring(1);
-  const maskedRest = restOfString.replace(/\d/g, "X");
-  return `${firstDigit}${maskedRest} đ`;
+  return `${firstDigit}${restOfString} VND`;
 };
 
 // --- COMPONENT ---
@@ -176,8 +176,7 @@ const HomePage = () => {
   const [loadingQuickCategories, setLoadingQuickCategories] = useState(true);
 
   const [availableProducts, setAvailableProducts] = useState([]);
-  const [loadingAvailableProducts, setLoadingAvailableProducts] =
-    useState(true);
+  const [loadingAvailableProducts, setLoadingAvailableProducts] =useState(true);
 
   const [allFlowers, setAllFlowers] = useState([]);
   const [filteredFlowers, setFilteredFlowers] = useState([]);
@@ -272,19 +271,67 @@ const HomePage = () => {
   }, [searchTerm, priceRange, allFlowers]);
 
   const ProductCard = ({ product }) => (
-    <RouterLink
-      to={`/detail/${product.id}`}
-    >
-      <div style={{display:'flex',flexDirection:'column',alignItems:'center'}}>
+    <RouterLink to={`/detail/${product.id}`} style={{ textDecoration: "none" }}>
+      <div style={{ textAlign: "center" }}>
+        {/* --- ẢNH SẢN PHẨM --- */}
+        {/* Sử dụng aspectRatio để ảnh luôn vuông và responsive */}
         <Image
           alt={product.name}
           src={product.image}
-          style={{ width: '100%', height: '210px', objectFit: "cover", borderRadius: 15 }}
+          style={{
+            width: "100%",
+            aspectRatio: "1 / 1", // Giữ cho ảnh luôn có tỷ lệ 1:1 (vuông)
+            objectFit: "cover",
+            borderRadius: 8, // Bo góc nhẹ cho đẹp hơn
+            border: "1px solid #e2e2e2ff",
+          }}
           className="product-image-hover-effect"
-          fallback="https://placehold.co/200x200/ffffff/c0c0c0?text=No+Image"
+          preview={false} // Ẩn icon preview khi hover
         />
-        <Typography>{product.name}</Typography>
-        <Typography>{formatPriceWithMask(product.price)}</Typography>
+
+        <div style={{ padding: "8px 4px" }}>
+          {/* --- MÃ SẢN PHẨM --- */}
+          {/* Bạn cần thêm thuộc tính 'code' vào object product */}
+          {/* <Text style={{ fontSize: 14, color: '#00d084' }}>{product.code}</Text> */}
+
+          {/* --- TÊN SẢN PHẨM --- */}
+          <Title
+            level={5}
+            style={{
+              margin: "4px 0",
+              fontSize: 16,
+              fontWeight: 500,
+              color: "#067862",
+            }}
+          >
+            {product.name}
+          </Title>
+
+          {/* --- HIỂN THỊ GIÁ --- */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "baseline",
+              gap: "8px",
+              marginTop: "4px",
+            }}
+          >
+            {/* Giá gốc (nếu có) */}
+            {/* Bạn cần thêm thuộc tính 'originalPrice' vào object product */}
+            {product.originalPrice && (
+              <Text delete style={{ color: "#585858ff", fontSize: 14 }}>
+                {formatPriceWithMask(product.originalPrice)}
+              </Text>
+            )}
+            {/* Giá mới (giá bán) */}
+            <Text
+              style={{ color: "#5f5f5fff", fontSize: 16, fontWeight: "bold" }}
+            >
+              {formatPriceWithMask(product.price)}
+            </Text>
+          </div>
+        </div>
       </div>
     </RouterLink>
   );
@@ -294,9 +341,9 @@ const HomePage = () => {
       <div style={styles.contentWrapper}>
         <div class="banner">
           <img
-            src="https://tramhoa.com/wp-content/uploads/2025/08/Tram-Hoa-Trao-Tron-Yeu-Thuong.webp"
+            src="https://dienhoasaigon.com.vn/wp-content/uploads/2022/03/banner-web_shop-hoa9x-01-scaled.jpg"
             alt="Banner"
-            style={{ width: "100%", borderRadius: "8px" }}
+            style={{ width: "100%", borderRadius: "8px", objectFit: "cover" }}
           />
         </div>
 
@@ -428,11 +475,11 @@ const HomePage = () => {
             </div>
           ) : (
             // --- CẬP NHẬT: Giảm khoảng cách (gutter) để card dày hơn ---
-            <Row gutter={[8, 8]} justify="start" align="top">
+            <Row gutter={[16, 24]} justify="start" align="top">
               {filteredFlowers.length > 0 ? (
                 filteredFlowers.map((product) => (
                   // --- CẬP NHẬT: 4 cột trên mọi kích thước màn hình ---
-                  <Col key={product.id} xs={4} sm={4} md={4} lg={4}>
+                  <Col key={product.id} xs={12} sm={12} md={6} lg={6} xl={6}>
                     <ProductCard product={product} />
                   </Col>
                 ))
