@@ -51,7 +51,7 @@ const items = [
 
   getItem(
     "FeedBack",
-    "/admin/main/setting",
+    "/admin/main/feedback",
     <AppstoreAddOutlined />
   ),
 
