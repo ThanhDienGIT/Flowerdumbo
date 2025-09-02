@@ -104,7 +104,7 @@ const Footer = () => {
         >
           FEEDBACK AND BLOG
         </Typography>
-        <div style={{ width: "50%" }}>
+        <div style={{ width: "70%" }}>
           <Row gutter={[16, 24]}>
             <Col span={12}>
               <RouterLink to="/feedback">
