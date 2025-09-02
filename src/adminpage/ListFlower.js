@@ -16,7 +16,8 @@ import {
   Upload,
   Row,
   Col,
-  Select, // <<<--- (1) IMPORT THÊM 'Select' TỪ ANTD
+  Select,
+  Avatar, // <<<--- (1) IMPORT THÊM 'Select' TỪ ANTD
 } from "antd";
 import { EditOutlined, DeleteOutlined, InboxOutlined } from "@ant-design/icons";
 
@@ -28,7 +29,7 @@ import {
 } from "../function/FlowerAPI";
 import FlowerDTO from "../DTO/FlowerDTO";
 import { uploadImage } from "../function/CloudiaryAPI";
-import { getListCategory } from "../function/CategoryAPI";
+import { getCategoryClassificationsByFlowerId, getFlowerClassificationsByCategoryId, getListCategory } from "../function/CategoryAPI";
 import JoditWrapper from "../components/JoditWrapper";
 
 
@@ -51,6 +52,7 @@ function ListFlower() {
   const [imageUrl, setImageUrl] = useState("");
   const [fileImage, setFileImage] = useState({});
   const [form] = Form.useForm();
+  const [selectedCategories, setSelectedCategories] = useState([]);
 
   // --- GIẢI PHÁP TRIỆT ĐỂ: DÙNG useEffect ĐỂ QUẢN LÝ FORM ---
   useEffect(() => {
@@ -130,7 +132,18 @@ function ListFlower() {
     setIsModalVisible(true);
   };
 
-  const handleEdit = (flower) => {
+  const handleEdit = async (flower) => {
+    console.log('flower',flower)
+    const data = await getCategoryClassificationsByFlowerId(flower.id)
+    const dataArraySelect = [];
+    console.log('data',data)
+    if(data && data.length > 0){
+      data.map(ele=>{
+        dataArraySelect.push(ele.categoryId)
+      })
+    }
+
+    setSelectedCategories(dataArraySelect)
     setEditingFlower(flower);
     setIsModalVisible(true);
   };
@@ -155,7 +168,8 @@ function ListFlower() {
         processedValues,
         editingFlower ? editingFlower : null,
         fetchFlowers,
-        handleModalCancel
+        handleModalCancel,
+        selectedCategories
       );
     } catch (err) {
       notification.error({ message: "Thao tác thất bại" });
@@ -277,8 +291,15 @@ function ListFlower() {
     return str;
   }
 
+
+  const consoleCate = () => {
+    console.log(selectedCategories)
+  }
+
   return (
     <div style={{ padding: "20px" }}>
+
+     
       <h1>Quản Lý Hoa</h1>
       <Button type="primary" onClick={handleAdd} style={{ marginBottom: 16 }}>
         Thêm Hoa Mới
@@ -358,29 +379,33 @@ function ListFlower() {
               </Form.Item>
 
               {/* <<<--- (4) THÊM SELECT BOX DANH MỤC VÀO FORM --- */}
-              <Form.Item
-                name="categoryId"
-                label="Danh Mục"
-                rules={[{ required: true, message: "Vui lòng chọn danh mục!" }]}
-              >
-                <Select
-                  showSearch
-                  placeholder="Chọn một danh mục"
-                  optionFilterProp="children"
-                  filterOption={(input, option) =>
-                    (option?.label ?? "")
-                      .toLowerCase()
-                      .includes(removeVietnameseTones(input.toLowerCase()))
-                  }
-                  options={categories.map((cat) => ({
-                    value: cat.id,
-                    label: cat.name,
-                  }))}
-                />
-              </Form.Item>
+              <div style={{ marginBottom: 24 }}>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Danh Mục</label>
+            <Select
+              mode="multiple" // Bật chế độ chọn nhiều
+              allowClear // Cho phép xóa tất cả lựa chọn
+              style={{ width: '100%' }}
+              placeholder="Chọn một hoặc nhiều danh mục"
+              value={selectedCategories} // Gán giá trị từ state
+              onChange={setSelectedCategories} // Cập nhật state khi thay đổi
+              optionLabelProp="label" // Hiển thị label đã chọn trong input
+            >
+              {categories.map((cat) => (
+                <Select.Option key={cat.id} value={cat.id} label={cat.name}>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <Avatar 
+                      shape="square" 
+                      size="small" 
+                      src={cat.image} 
+                      style={{ marginRight: 8 }} 
+                    />
+                    {cat.name}
+                  </div>
+                </Select.Option>
+              ))}
+            </Select>
+          </div>
               {/* <<<--- KẾT THÚC PHẦN THÊM MỚI --- */}
-
-             
               <Form.Item
                 name="price"
                 label="Giá"
@@ -415,6 +440,7 @@ function ListFlower() {
             </Space>
           </Row>
         </Form>
+
       </Modal>
     </div>
   );

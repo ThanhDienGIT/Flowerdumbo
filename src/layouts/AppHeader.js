@@ -90,7 +90,7 @@ const AppHeader = ({ onMenuClick }) => {
         {/* Tầng 2: Logo và Icons */}
         <div style={styles.topBar}>
           <Text style={styles.topBarText}>
-            Liên hệ INBOX qua ZALO 0843.266.691
+            CHÀO MỪNG XƯỞNG HOA'S CỦA KHA
           </Text>
         </div>
         <Row style={styles.mainHeader} justify="space-between" align="middle">
@@ -134,37 +134,19 @@ const AppHeader = ({ onMenuClick }) => {
       <div className="mobile-header">
         <div style={styles.topBar}>
           <Text style={styles.topBarText}>
-            Liên hệ INBOX qua ZALO 0843.266.691
+           Chào mừng quý khách đến Xưởng Hoa's của Kha
           </Text>
         </div>
         {/* Tầng 2: Logo và Icons */}
-        <Row style={styles.mainHeader} justify="space-between" align="middle">
-          <col></col>
-          
+        <Row style={styles.mainHeader} justify="center" align="middle">
+        
           <Col>
             <Link to={"/"}>
               <img src={logo} alt="Logo" style={{ height: 150 }} />
             </Link>
           </Col>
-          <Col>
-          <Col style={{display:'flex',gap:10}}>
-            <Button href="https://zalo.me/84843266691" target="_blank" rel="noopener noreferrer" shape="circle"
-              style={{
-                backgroundColor: '#0068ff',
-                color: 'white',
-                borderColor: '#0068ff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width:40,
-                height:40
-              }}
-              >
-              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Icon_of_Zalo.svg/1024px-Icon_of_Zalo.svg.png" width={20} height={20} alt=''/>
-              </Button>
-              <Button href="https://www.tiktok.com/@xng.hoa.online" shape="circle" target="_blank" rel="noopener noreferrer" style={{backgroundColor:"black",color:'white',width:40,height:40}} icon={<TikTokOutlined />} />
-          </Col>
-          </Col>
+       
+         
         </Row>
 
         {/* Tầng 3: Menu chính */}

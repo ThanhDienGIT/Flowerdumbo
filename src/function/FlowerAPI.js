@@ -69,7 +69,7 @@ const addFlower = async (flowerData) => {
     const newId =
       currentFlowers.length > 0
         ? Math.max(...currentFlowers.map((f) => f.id || 0)) + 1
-        : 0;
+        : 1;
 
     // Sử dụng FlowerDTO để tạo đối tượng hoa mới, đảm bảo cấu trúc và giá trị mặc định
     const newFlower = FlowerDTO({
@@ -231,7 +231,6 @@ const getFlowersByCategoryId = (categoryId) => {
   return new Promise((resolve, reject) => {
     const classificationRef = ref(database, "FlowerClassification");
     
-
     const categoryQuery = query(
       classificationRef,
       orderByChild("categoryId"),

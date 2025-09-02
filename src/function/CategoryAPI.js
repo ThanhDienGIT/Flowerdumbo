@@ -137,7 +137,20 @@ const deleteCategory = async (id) => {
   }
 };
 
-
+const getFlowerClassifications = async () => {
+  try {
+    const classificationRef = ref(database, 'FlowerClassification');
+    const snapshot = await get(classificationRef);
+    if (snapshot.exists()) {
+      const data = Object.values(snapshot.val());
+      return data;
+    }
+    return [];
+  } catch (error) {
+    console.error(`Lỗi khi lấy phân loại hoa cho Category`, error);
+    throw error;
+  }
+}
 
 const getFlowerClassificationsByCategoryId = async (categoryId) => {
   try {
@@ -145,11 +158,26 @@ const getFlowerClassificationsByCategoryId = async (categoryId) => {
     const snapshot = await get(classificationRef);
     if (snapshot.exists()) {
       const data = Object.values(snapshot.val());
-      return data.filter(item => item.categoryId === categoryId);
+      return data.filter(item => Number(item.categoryId) == Number(categoryId));
     }
     return [];
   } catch (error) {
     console.error(`Lỗi khi lấy phân loại hoa cho Category ${categoryId}:`, error);
+    throw error;
+  }
+};
+
+const getCategoryClassificationsByFlowerId = async (flowerid) => {
+  try {
+    const classificationRef = ref(database, 'FlowerClassification');
+    const snapshot = await get(classificationRef);
+    if (snapshot.exists()) {
+      const data = Object.values(snapshot.val());
+      return data.filter(item => Number(item.flowerId) == Number(flowerid));
+    }
+    return [];
+  } catch (error) {
+    console.error(`Lỗi khi lấy phân loại hoa cho Category ${flowerid}:`, error);
     throw error;
   }
 };
@@ -163,6 +191,10 @@ const getFlowerClassificationsByCategoryId = async (categoryId) => {
  */
 const updateFlowerClassifications = async (categoryId, selectedFlowers) => {
   try {
+    
+    console.log(categoryId)
+    console.log(selectedFlowers)
+
     const classificationRef = ref(database, 'FlowerClassification');
     
     // 1. Lấy tất cả các phân loại hiện có từ Firebase
@@ -213,7 +245,7 @@ const addCategoryWhenAddFlower = async (flower,floweridSend) => {
     const newId =
       allClassifications.length > 0
         ? Math.max(...allClassifications.map((f) => f.id || 0)) + 1
-        : 0;
+        : 1;
 
     flower.flowerId = floweridSend
     flower.id = newId;
@@ -276,5 +308,5 @@ const getFlowersByCategoryId = async (categoryId) => {
 
 // Chỉ export các hàm API, không export 'database'
 export { addCategory, getListCategory, editCategory, deleteCategory, getFlowerClassificationsByCategoryId, updateFlowerClassifications,getCategoryById,getFlowersByCategoryId,
-  addCategoryWhenAddFlower
+  addCategoryWhenAddFlower,getCategoryClassificationsByFlowerId,getFlowerClassifications
  };

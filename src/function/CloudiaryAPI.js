@@ -2,14 +2,24 @@ import { database } from "../firebaseConfig/firebase-config";
 import { ref, set } from "firebase/database";
 import axios from "axios";
 import { addFlower, editFlower, getListFlower } from "./FlowerAPI";
-import { addCategory, editCategory, updateFlowerClassifications,addCategoryWhenAddFlower } from "./CategoryAPI";
+import {
+  addCategory,
+  editCategory,
+  updateFlowerClassifications,
+} from "./CategoryAPI";
 
 const CLOUD_NAME = "FlowerKey";
 const UPLOAD_PRESET = "ml_default";
 const API_KEY = "434853968532154";
 
 // Cập nhật dữ liệu cấu hình website
-export const uploadImage = async (data, editId, fetch, cancelModal) => {
+export const uploadImage = async (
+  data,
+  editId,
+  fetch,
+  cancelModal,
+  selectCategory = []
+) => {
   try {
     const formData = new FormData();
     formData.append("file", data.image.file);
@@ -26,24 +36,32 @@ export const uploadImage = async (data, editId, fetch, cancelModal) => {
         .then(async (result) => {
           console.log("result", result);
 
-          const object = {
+          var object = {
             ...data,
             image: result.data.secure_url,
-            idImage: result.data.public_id
+            idImage: result.data.public_id,
           };
 
           if (result) {
             if (editId == null) {
               const result2 = await addFlower(object);
-              await addCategoryWhenAddFlower(object,result2.id);
+              object.id = result2.id;
+              if (selectCategory.length > 0) {
+                selectCategory.map(async (ele) => {
+                  await updateFlowerClassifications(ele, [object]);
+                });
+              }
             } else {
+              console.log("edit");
               await editFlower(editId.id, object);
-              await updateFlowerClassifications(editId.id,[object]);
+              object.id = editId.id;
+              if (selectCategory.length > 0) {
+                selectCategory.map(async (ele) => {
+                  await updateFlowerClassifications(ele, [object]);
+                });
+              }
             }
           }
-
-          eval(fetch)();
-          eval(cancelModal)();
 
           return true;
         })
@@ -52,13 +70,33 @@ export const uploadImage = async (data, editId, fetch, cancelModal) => {
           return false;
         });
     } else {
-      await editFlower(editId.id, {...data,image:editId.image});
-      eval(fetch)();
-          eval(cancelModal)();
+      var object = data
+        
+      if (editId == null) {
+        const result2 = await addFlower(object);
+        object.id = result2.id;
+        if (selectCategory.length > 0) {
+          selectCategory.map(async (ele) => {
+            await updateFlowerClassifications(ele, [object]);
+          });
+        }
+      } else {
+        console.log("edit");
+        await editFlower(editId.id, object);
+        object.id = editId.id;
+        if (selectCategory.length > 0) {
+          selectCategory.map(async (ele) => {
+            await updateFlowerClassifications(ele, [object]);
+          });
+        }
+      }
     }
   } catch (error) {
     console.error("Lỗi khi cập nhật setting:", error);
     return false;
+  } finally {
+    eval(fetch)();
+    eval(cancelModal)();
   }
 };
 
