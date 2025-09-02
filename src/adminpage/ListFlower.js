@@ -17,7 +17,8 @@ import {
   Row,
   Col,
   Select,
-  Avatar, // <<<--- (1) IMPORT THÊM 'Select' TỪ ANTD
+  Avatar,
+  Alert, // <<<--- (1) IMPORT THÊM 'Alert' TỪ ANTD
 } from "antd";
 import { EditOutlined, DeleteOutlined, InboxOutlined } from "@ant-design/icons";
 
@@ -45,7 +46,7 @@ const getBase64 = (file) =>
 
 function ListFlower() {
   const [flowers, setFlowers] = useState([]);
-  const [categories, setCategories] = useState([]); // <<<--- (2) TẠO STATE MỚI ĐỂ LƯU DANH MỤC
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingFlower, setEditingFlower] = useState(null);
@@ -53,6 +54,10 @@ function ListFlower() {
   const [fileImage, setFileImage] = useState({});
   const [form] = Form.useForm();
   const [selectedCategories, setSelectedCategories] = useState([]);
+
+  // <<<--- (2) TẠO STATE MỚI ĐỂ QUẢN LÝ ALERT ---
+  const [alertInfo, setAlertInfo] = useState(null);
+
 
   // --- GIẢI PHÁP TRIỆT ĐỂ: DÙNG useEffect ĐỂ QUẢN LÝ FORM ---
   useEffect(() => {
@@ -103,36 +108,37 @@ function ListFlower() {
       const data = await getListFlower();
       setFlowers(data.map((flower) => ({ ...flower, key: flower.id })));
     } catch (err) {
-      notification.error({ message: "Lỗi tải dữ liệu hoa" });
+      // <<<--- THAY THẾ NOTIFICATION BẰNG ALERT ---
+      setAlertInfo({ type: "error", message: "Lỗi tải dữ liệu hoa" });
     } finally {
       setLoading(false);
     }
   };
 
-  // <<<--- (3) CẬP NHẬT HÀM fetchCategories ĐỂ SET STATE
   const fetchCategories = async () => {
     try {
       const data = await getListCategory();
-      // Giả sử data trả về là một mảng các đối tượng category
-      // Ví dụ: [{ id: 1, name: 'Hoa bó' }, { id: 2, name: 'Hoa giỏ' }]
       setCategories(data);
     } catch (err) {
-      notification.error({ message: "Lỗi tải dữ liệu danh mục" });
+      // <<<--- THAY THẾ NOTIFICATION BẰNG ALERT ---
+      setAlertInfo({ type: "error", message: "Lỗi tải dữ liệu danh mục" });
     }
   };
 
   useEffect(() => {
-    fetchCategories(); // Tải danh mục
-    fetchFlowers(); // Tải danh sách hoa
+    fetchCategories();
+    fetchFlowers();
   }, []);
 
   // --- Các hàm handler ---
   const handleAdd = () => {
     setEditingFlower(null);
     setIsModalVisible(true);
+    setAlertInfo(null); // <<<--- Xóa alert cũ khi mở modal
   };
 
   const handleEdit = async (flower) => {
+    setAlertInfo(null); // <<<--- Xóa alert cũ khi mở modal
     console.log('flower',flower)
     const data = await getCategoryClassificationsByFlowerId(flower.id)
     const dataArraySelect = [];
@@ -154,7 +160,6 @@ function ListFlower() {
   };
 
   const onFinish = async (values) => {
-    // Giá trị 'categoryId' từ Select box sẽ có sẵn trong 'values'
     const processedValues = {
       ...values,
       status: values.status ? 1 : 0,
@@ -164,15 +169,20 @@ function ListFlower() {
     };
     
     try {
-      await uploadImage(
+      const result = await uploadImage(
         processedValues,
         editingFlower ? editingFlower : null,
         fetchFlowers,
         handleModalCancel,
         selectedCategories
       );
+
+      // <<<--- THÊM ALERT KHI THÀNH CÔNG ---
+      const message = editingFlower ? "Cập nhật hoa thành công!" : "Thêm mới hoa thành công!";
+      setAlertInfo({ type: "success", message });
     } catch (err) {
-      notification.error({ message: "Thao tác thất bại" });
+      // <<<--- THAY THẾ NOTIFICATION BẰNG ALERT ---
+      setAlertInfo({ type: "error", message: "Thao tác thất bại, vui lòng thử lại." });
     }
   };
 
@@ -206,10 +216,12 @@ function ListFlower() {
   const handleDelete = async (flower) => {
     try {
       await deleteFlower(flower.id);
-      notification.success({ message: `Đã xóa hoa "${flower.name}".` });
+      // <<<--- THAY THẾ NOTIFICATION BẰNG ALERT ---
+      setAlertInfo({ type: "success", message: `Đã xóa hoa "${flower.name}".` });
       fetchFlowers();
     } catch (err) {
-      notification.error({ message: `Lỗi khi xóa hoa.` });
+      // <<<--- THAY THẾ NOTIFICATION BẰNG ALERT ---
+      setAlertInfo({ type: "error", message: `Lỗi khi xóa hoa.` });
     }
   };
 
@@ -299,7 +311,18 @@ function ListFlower() {
   return (
     <div style={{ padding: "20px" }}>
 
-     
+      {/* <<<--- (3) HIỂN THỊ ALERT TẠI ĐÂY --- */}
+      {alertInfo && (
+        <Alert
+          message={alertInfo.message}
+          type={alertInfo.type}
+          showIcon
+          closable
+          onClose={() => setAlertInfo(null)}
+          style={{ marginBottom: 16 }}
+        />
+      )}
+      
       <h1>Quản Lý Hoa</h1>
       <Button type="primary" onClick={handleAdd} style={{ marginBottom: 16 }}>
         Thêm Hoa Mới
@@ -378,34 +401,32 @@ function ListFlower() {
                 <Input />
               </Form.Item>
 
-              {/* <<<--- (4) THÊM SELECT BOX DANH MỤC VÀO FORM --- */}
               <div style={{ marginBottom: 24 }}>
-            <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Danh Mục</label>
-            <Select
-              mode="multiple" // Bật chế độ chọn nhiều
-              allowClear // Cho phép xóa tất cả lựa chọn
-              style={{ width: '100%' }}
-              placeholder="Chọn một hoặc nhiều danh mục"
-              value={selectedCategories} // Gán giá trị từ state
-              onChange={setSelectedCategories} // Cập nhật state khi thay đổi
-              optionLabelProp="label" // Hiển thị label đã chọn trong input
-            >
-              {categories.map((cat) => (
-                <Select.Option key={cat.id} value={cat.id} label={cat.name}>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <Avatar 
-                      shape="square" 
-                      size="small" 
-                      src={cat.image} 
-                      style={{ marginRight: 8 }} 
-                    />
-                    {cat.name}
-                  </div>
-                </Select.Option>
-              ))}
-            </Select>
-          </div>
-              {/* <<<--- KẾT THÚC PHẦN THÊM MỚI --- */}
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Danh Mục</label>
+              <Select
+                mode="multiple"
+                allowClear
+                style={{ width: '100%' }}
+                placeholder="Chọn một hoặc nhiều danh mục"
+                value={selectedCategories}
+                onChange={setSelectedCategories}
+                optionLabelProp="label"
+              >
+                {categories.map((cat) => (
+                  <Select.Option key={cat.id} value={cat.id} label={cat.name}>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <Avatar 
+                        shape="square" 
+                        size="small" 
+                        src={cat.image} 
+                        style={{ marginRight: 8 }} 
+                      />
+                      {cat.name}
+                    </div>
+                  </Select.Option>
+                ))}
+              </Select>
+            </div>
               <Form.Item
                 name="price"
                 label="Giá"
@@ -421,7 +442,7 @@ function ListFlower() {
             </Col>
 
             <Col span={10}>
-             <Form.Item
+              <Form.Item
                 name="description"
                 label="Mô Tả"
                 rules={[{ required: true, message: "Vui lòng nhập mô tả!" }]}

@@ -62,13 +62,16 @@ export const uploadImage = async (
               }
             }
           }
-
+eval(fetch)();
+          eval(cancelModal)();
           return true;
         })
         .catch((err) => {
           console.log(err);
           return false;
         });
+            eval(fetch)();
+          eval(cancelModal)();
     } else {
       var object = data
         
@@ -89,14 +92,13 @@ export const uploadImage = async (
             await updateFlowerClassifications(ele, [object]);
           });
         }
+            eval(fetch)();
+    eval(cancelModal)();
       }
     }
   } catch (error) {
     console.error("Lỗi khi cập nhật setting:", error);
     return false;
-  } finally {
-    eval(fetch)();
-    eval(cancelModal)();
   }
 };
 
