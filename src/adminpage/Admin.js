@@ -49,6 +49,12 @@ const items = [
     <SettingOutlined />
   ),
 
+  getItem(
+    "FeedBack",
+    "/admin/main/setting",
+    <AppstoreAddOutlined />
+  ),
+
   // getItem(
   //   "Cấu hình web",
   //   "/admin/main/setting",
