@@ -214,8 +214,8 @@ function DetailProjects() {
           <Col xs={24} lg={12}>
             <Image
               src={
-                flowerDetails.image ||
-                "https://via.placeholder.com/600?text=No+Image"
+                typeof(flowerDetails.image) == 'string' ? flowerDetails.image : flowerDetails.image.fileList[0].url ||
+                "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQX-ckH3pqMh_BAz3pUN3s5V-Sds_D2ISNFUg&s"
               }
               alt={flowerDetails.name}
               style={{
