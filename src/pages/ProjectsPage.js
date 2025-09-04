@@ -81,7 +81,7 @@ const ProductCard = ({ product }) => (
       {/* --- ẢNH SẢN PHẨM --- */}
       <Image
         alt={product.name}
-        src={product.image}
+        src={typeof(product.image)  == 'string' ? product.image : product.image.fileList[0].url}
         style={{
           width: "100%",
           aspectRatio: "1 / 1",
