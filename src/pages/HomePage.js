@@ -277,7 +277,7 @@ const HomePage = () => {
         {/* Sử dụng aspectRatio để ảnh luôn vuông và responsive */}
         <Image
           alt={product.name}
-          src={product.image}
+          src={typeof(product.image) == 'string' ? product.image : product.image.fileList[0].url}
           style={{
             width: "100%",
             aspectRatio: "1 / 1", // Giữ cho ảnh luôn có tỷ lệ 1:1 (vuông)

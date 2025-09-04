@@ -27,6 +27,9 @@ export const uploadImage = async (
     formData.append("upload_preset", UPLOAD_PRESET);
     formData.append("api_key", API_KEY);
 
+    console.log('console main', data)
+
+
     if (data.image.file) {
       axios
         .post(
@@ -62,7 +65,7 @@ export const uploadImage = async (
               }
             }
           }
-eval(fetch)();
+          eval(fetch)();
           eval(cancelModal)();
           return true;
         })
@@ -70,11 +73,11 @@ eval(fetch)();
           console.log(err);
           return false;
         });
-            eval(fetch)();
-          eval(cancelModal)();
+      eval(fetch)();
+      eval(cancelModal)();
     } else {
-      var object = data
-        
+      var object = data;
+
       if (editId == null) {
         const result2 = await addFlower(object);
         object.id = result2.id;
@@ -92,8 +95,8 @@ eval(fetch)();
             await updateFlowerClassifications(ele, [object]);
           });
         }
-            eval(fetch)();
-    eval(cancelModal)();
+        eval(fetch)();
+        eval(cancelModal)();
       }
     }
   } catch (error) {

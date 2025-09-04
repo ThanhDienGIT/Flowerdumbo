@@ -245,7 +245,7 @@ const addCategoryWhenAddFlower = async (flower,floweridSend) => {
     const newId =
       allClassifications.length > 0
         ? Math.max(...allClassifications.map((f) => f.id || 0)) + 1
-        : 1;
+        : 0; 
 
     flower.flowerId = floweridSend
     flower.id = newId;

@@ -53,6 +53,12 @@ const addFlower = async (flowerData) => {
     const flowersRef = ref(database, "flower");
     const snapshot = await get(flowersRef);
 
+    if (typeof(flowerData.image) == "string") {
+      flowerData.image = flowerData.image;
+    } else {
+      flowerData.image = flowerData.image.fileList[0].url;
+    }
+
     let currentFlowers = [];
     if (snapshot.exists()) {
       const data = snapshot.val();
@@ -69,7 +75,7 @@ const addFlower = async (flowerData) => {
     const newId =
       currentFlowers.length > 0
         ? Math.max(...currentFlowers.map((f) => f.id || 0)) + 1
-        : 1;
+        : 0;
 
     // Sử dụng FlowerDTO để tạo đối tượng hoa mới, đảm bảo cấu trúc và giá trị mặc định
     const newFlower = FlowerDTO({
@@ -99,6 +105,18 @@ const editFlower = async (id, updatedObject) => {
   try {
     const flowersRef = ref(database, "flower");
     const snapshot = await get(flowersRef);
+
+      console.log('updatedObject',updatedObject)
+
+
+    if (updatedObject.image.file) {
+    } else {
+      if (typeof(updatedObject.image) == "string") {
+        updatedObject.image = updatedObject.image;
+      } else {
+        updatedObject.image = updatedObject.image.fileList[0].url;
+      }
+    }
 
     if (snapshot.exists()) {
       let currentFlowers = Object.values(snapshot.val()); // Lấy mảng hoa hiện tại
@@ -141,12 +159,12 @@ const editFlower = async (id, updatedObject) => {
 const deleteFlower = async (id) => {
   try {
     // --- BƯỚC 1: Xóa các bản ghi liên quan trong FlowerClassification ---
-    const classificationRef = ref(database, 'FlowerClassification');
+    const classificationRef = ref(database, "FlowerClassification");
     const classificationSnapshot = await get(classificationRef);
 
     if (classificationSnapshot.exists()) {
       const allClassifications = Object.values(classificationSnapshot.val());
-      
+
       // Lọc và giữ lại những bản ghi KHÔNG có flowerId trùng với id cần xóa
       const updatedClassifications = allClassifications.filter(
         (classification) => classification.flowerId !== id
@@ -156,7 +174,9 @@ const deleteFlower = async (id) => {
       await set(classificationRef, updatedClassifications);
       console.log(`Đã xóa các phân loại liên quan đến flowerId: ${id}`);
     } else {
-      console.log("Không có dữ liệu trong FlowerClassification, bỏ qua bước xóa liên quan.");
+      console.log(
+        "Không có dữ liệu trong FlowerClassification, bỏ qua bước xóa liên quan."
+      );
     }
 
     // --- BƯỚC 2: Xóa bản ghi gốc trong node "flower" (code gốc của bạn) ---
@@ -168,7 +188,9 @@ const deleteFlower = async (id) => {
       const initialLength = currentFlowers.length;
 
       // Lọc ra các bông hoa không có ID trùng khớp
-      const updatedFlowers = currentFlowers.filter((flower) => flower.id !== id);
+      const updatedFlowers = currentFlowers.filter(
+        (flower) => flower.id !== id
+      );
 
       if (updatedFlowers.length < initialLength) {
         // Ghi đè lại node "flower"
@@ -185,7 +207,10 @@ const deleteFlower = async (id) => {
     }
   } catch (error) {
     // Gộp chung thông báo lỗi
-    console.error(`Lỗi khi xóa hoa và các phân loại liên quan với ID ${id}:`, error);
+    console.error(
+      `Lỗi khi xóa hoa và các phân loại liên quan với ID ${id}:`,
+      error
+    );
     throw error;
   }
 };
@@ -230,7 +255,7 @@ const getFlowerById = (flowerId) => {
 const getFlowersByCategoryId = (categoryId) => {
   return new Promise((resolve, reject) => {
     const classificationRef = ref(database, "FlowerClassification");
-    
+
     const categoryQuery = query(
       classificationRef,
       orderByChild("categoryId"),
@@ -388,18 +413,18 @@ const getListFlowerHaveInShop = async () => {
     const statusQuery = query(flowersRef, orderByChild("status"), 1);
 
     const snapshot = await get(statusQuery);
-    
+
     if (snapshot.exists()) {
       // Dữ liệu trả về là một object, chuyển nó thành một mảng
       const data = snapshot.val();
-      const flowerList = Object.keys(data).map(key => ({
+      const flowerList = Object.keys(data).map((key) => ({
         id: key, // Lấy luôn cả key của Firebase làm id nếu cần
-        ...data[key]
+        ...data[key],
       }));
-      
+
       console.log("Đã tìm thấy hoa:", flowerList);
       return flowerList;
-    } else{
+    } else {
       console.log("Không tìm thấy hoa nào có status =", 1);
       return []; // Trả về mảng rỗng nếu không có dữ liệu
     }
@@ -420,5 +445,4 @@ export {
   getFlowersByStatus,
   getRelatedFlowers,
   getListFlowerHaveInShop,
-
 };

@@ -30,9 +30,13 @@ import {
 } from "../function/FlowerAPI";
 import FlowerDTO from "../DTO/FlowerDTO";
 import { uploadImage } from "../function/CloudiaryAPI";
-import { getCategoryClassificationsByFlowerId, getFlowerClassificationsByCategoryId, getListCategory } from "../function/CategoryAPI";
+import {
+  getCategoryClassificationsByFlowerId,
+  getFlowerClassificationsByCategoryId,
+  getListCategory,
+} from "../function/CategoryAPI";
 import JoditWrapper from "../components/JoditWrapper";
-
+import JoditView from "../components/JoditView";
 
 const initialFlowerState = FlowerDTO();
 
@@ -57,7 +61,6 @@ function ListFlower() {
 
   // <<<--- (2) TẠO STATE MỚI ĐỂ QUẢN LÝ ALERT ---
   const [alertInfo, setAlertInfo] = useState(null);
-
 
   // --- GIẢI PHÁP TRIỆT ĐỂ: DÙNG useEffect ĐỂ QUẢN LÝ FORM ---
   useEffect(() => {
@@ -139,17 +142,17 @@ function ListFlower() {
 
   const handleEdit = async (flower) => {
     setAlertInfo(null); // <<<--- Xóa alert cũ khi mở modal
-    console.log('flower',flower)
-    const data = await getCategoryClassificationsByFlowerId(flower.id)
+    console.log("flower", flower);
+    const data = await getCategoryClassificationsByFlowerId(flower.id);
     const dataArraySelect = [];
-    console.log('data',data)
-    if(data && data.length > 0){
-      data.map(ele=>{
-        dataArraySelect.push(ele.categoryId)
-      })
+    console.log("data", data);
+    if (data && data.length > 0) {
+      data.map((ele) => {
+        dataArraySelect.push(ele.categoryId);
+      });
     }
 
-    setSelectedCategories(dataArraySelect)
+    setSelectedCategories(dataArraySelect);
     setEditingFlower(flower);
     setIsModalVisible(true);
   };
@@ -167,7 +170,7 @@ function ListFlower() {
         ? editingFlower.importDate
         : new Date().toISOString().split("T")[0],
     };
-    
+
     try {
       const result = await uploadImage(
         processedValues,
@@ -178,11 +181,16 @@ function ListFlower() {
       );
 
       // <<<--- THÊM ALERT KHI THÀNH CÔNG ---
-      const message = editingFlower ? "Cập nhật hoa thành công!" : "Thêm mới hoa thành công!";
+      const message = editingFlower
+        ? "Cập nhật hoa thành công!"
+        : "Thêm mới hoa thành công!";
       setAlertInfo({ type: "success", message });
     } catch (err) {
       // <<<--- THAY THẾ NOTIFICATION BẰNG ALERT ---
-      setAlertInfo({ type: "error", message: "Thao tác thất bại, vui lòng thử lại." });
+      setAlertInfo({
+        type: "error",
+        message: "Thao tác thất bại, vui lòng thử lại.",
+      });
     }
   };
 
@@ -217,7 +225,10 @@ function ListFlower() {
     try {
       await deleteFlower(flower.id);
       // <<<--- THAY THẾ NOTIFICATION BẰNG ALERT ---
-      setAlertInfo({ type: "success", message: `Đã xóa hoa "${flower.name}".` });
+      setAlertInfo({
+        type: "success",
+        message: `Đã xóa hoa "${flower.name}".`,
+      });
       fetchFlowers();
     } catch (err) {
       // <<<--- THAY THẾ NOTIFICATION BẰNG ALERT ---
@@ -236,19 +247,39 @@ function ListFlower() {
       title: "Ảnh",
       dataIndex: "image",
       key: "image",
-      render: (url) => (
-        <Image
-          src={url}
-          width={160}
-          height={210}
-          style={{
-            objectFit: "cover",
-            borderRadius: 15,
-            border: "1px solid #ccc",
-          }}
-          fallback="https://via.placeholder.com/80?text=No+Image"
-        />
-      ),
+      render: (url) => {
+        {
+          if (typeof url == "string") {
+            return (
+              <Image
+                src={url}
+                width={160}
+                height={210}
+                style={{
+                  objectFit: "cover",
+                  borderRadius: 15,
+                  border: "1px solid #ccc",
+                }}
+                fallback="https://via.placeholder.com/80?text=No+Image"
+              />
+            );
+          }else{
+            return (
+              <Image
+                src={url.fileList[0].url}
+                width={160}
+                height={210}
+                style={{
+                  objectFit: "cover",
+                  borderRadius: 15,
+                  border: "1px solid #ccc",
+                }}
+                fallback="https://via.placeholder.com/80?text=No+Image"
+              />
+            );
+          }
+        }
+      },
       width: 100,
     },
     {
@@ -262,6 +293,9 @@ function ListFlower() {
       title: "Mô Tả",
       dataIndex: "description",
       key: "description",
+      render: (description) => (
+        <JoditView htmlContent={description}/>
+      ),
       width: 400,
     },
     {
@@ -303,14 +337,12 @@ function ListFlower() {
     return str;
   }
 
-
   const consoleCate = () => {
-    console.log(selectedCategories)
-  }
+    console.log(selectedCategories);
+  };
 
   return (
     <div style={{ padding: "20px" }}>
-
       {/* <<<--- (3) HIỂN THỊ ALERT TẠI ĐÂY --- */}
       {alertInfo && (
         <Alert
@@ -322,7 +354,7 @@ function ListFlower() {
           style={{ marginBottom: 16 }}
         />
       )}
-      
+
       <h1>Quản Lý Hoa</h1>
       <Button type="primary" onClick={handleAdd} style={{ marginBottom: 16 }}>
         Thêm Hoa Mới
@@ -339,7 +371,7 @@ function ListFlower() {
         open={isModalVisible}
         onCancel={handleModalCancel}
         footer={null}
-        width={'100%'}
+        width={"100%"}
       >
         <Form
           form={form}
@@ -402,31 +434,35 @@ function ListFlower() {
               </Form.Item>
 
               <div style={{ marginBottom: 24 }}>
-              <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Danh Mục</label>
-              <Select
-                mode="multiple"
-                allowClear
-                style={{ width: '100%' }}
-                placeholder="Chọn một hoặc nhiều danh mục"
-                value={selectedCategories}
-                onChange={setSelectedCategories}
-                optionLabelProp="label"
-              >
-                {categories.map((cat) => (
-                  <Select.Option key={cat.id} value={cat.id} label={cat.name}>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <Avatar 
-                        shape="square" 
-                        size="small" 
-                        src={cat.image} 
-                        style={{ marginRight: 8 }} 
-                      />
-                      {cat.name}
-                    </div>
-                  </Select.Option>
-                ))}
-              </Select>
-            </div>
+                <label
+                  style={{ display: "block", marginBottom: 8, fontWeight: 600 }}
+                >
+                  Danh Mục
+                </label>
+                <Select
+                  mode="multiple"
+                  allowClear
+                  style={{ width: "100%" }}
+                  placeholder="Chọn một hoặc nhiều danh mục"
+                  value={selectedCategories}
+                  onChange={setSelectedCategories}
+                  optionLabelProp="label"
+                >
+                  {categories.map((cat) => (
+                    <Select.Option key={cat.id} value={cat.id} label={cat.name}>
+                      <div style={{ display: "flex", alignItems: "center" }}>
+                        <Avatar
+                          shape="square"
+                          size="small"
+                          src={cat.image}
+                          style={{ marginRight: 8 }}
+                        />
+                        {cat.name}
+                      </div>
+                    </Select.Option>
+                  ))}
+                </Select>
+              </div>
               <Form.Item
                 name="price"
                 label="Giá"
@@ -449,7 +485,6 @@ function ListFlower() {
               >
                 <JoditWrapper placeholder={"Nhập mô tả"} />
               </Form.Item>
-
             </Col>
           </Row>
           <Row justify="end" style={{ marginTop: 16 }}>
@@ -461,7 +496,6 @@ function ListFlower() {
             </Space>
           </Row>
         </Form>
-
       </Modal>
     </div>
   );
