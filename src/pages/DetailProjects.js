@@ -213,10 +213,7 @@ function DetailProjects() {
           {/* CỘT BÊN TRÁI: HÌNH ẢNH SẢN PHẨM */}
           <Col xs={24} lg={12}>
             <Image
-              src={
-                typeof(flowerDetails.image) == 'string' ? flowerDetails.image : flowerDetails.image.fileList[0].url ||
-                "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQX-ckH3pqMh_BAz3pUN3s5V-Sds_D2ISNFUg&s"
-              }
+              src={typeof(flowerDetails.image) == 'string' ? flowerDetails.image : flowerDetails.image.fileList[0].url}
               alt={flowerDetails.name}
               style={{
                 borderRadius: "8px",
