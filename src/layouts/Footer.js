@@ -102,43 +102,29 @@ const Footer = () => {
             maxWidth: 1200,
           }}
         >
-          FEEDBACK AND BLOG
+          Phản hồi từ khách hàng
         </Typography>
-        <div style={{ width: "70%" }}>
+        <div style={{ width: "90%" }}>
           <Row gutter={[16, 24]}>
-            <Col span={12}>
+            <Col span={24}>
               <RouterLink to="/feedback">
                 <Image
                   width={"100%"}
-                  height={"250px"}
+                  height={"300px"}
                   style={{
-                    borderRadius: "50px",
+                    borderRadius: "20px",
                     aspectRatio: "1 / 1", // Giữ cho ảnh luôn có tỷ lệ 1:1 (vuông)
-                    objectFit: "cover",
+                    objectFit: "contain",
                     cursor: "pointer",
                   }}
                   src={blog} // <-- Ảnh minh họa (bạn có thể thay đổi)
                   preview={false}
-                  alt="Tại sao nên chọn Xưởng hoa của Kha"
+                  alt="Feedback từ khách hnagf"
                 />
               </RouterLink>
             </Col>
 
-            <Col span={12}>
-              <Image
-                width={"100%"}
-                height={"250px"}
-                style={{
-                  borderRadius: "50px",
-                  aspectRatio: "1 / 1", // Giữ cho ảnh luôn có tỷ lệ 1:1 (vuông)
-                  objectFit: "cover",
-                  cursor: "pointer",
-                }}
-                src={feedback} // <-- Ảnh minh họa (bạn có thể thay đổi)
-                preview={false}
-                alt="Tại sao nên chọn Xưởng hoa của Kha"
-              />
-            </Col>
+            
           </Row>
         </div>
 
