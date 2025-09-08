@@ -320,7 +320,7 @@ function ProjectsPage() {
                 ) : (
                   products.map((product, index) => (
                     // THAY THẾ CARD CŨ BẰNG ProductCard MỚI
-                    <Col key={index} xs={16} sm={16} md={8} lg={4}>
+                    <Col key={index} xs={12} sm={12} md={4} lg={4}>
                       <ProductCard product={product} />
                     </Col>
                   ))
