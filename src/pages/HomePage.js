@@ -479,7 +479,7 @@ const HomePage = () => {
               {filteredFlowers.length > 0 ? (
                 filteredFlowers.map((product) => (
                   // --- CẬP NHẬT: 4 cột trên mọi kích thước màn hình ---
-                  <Col key={product.id} xs={12} sm={12} md={6} lg={6} xl={6}>
+                  <Col key={product.id} xs={12} sm={12} md={6} lg={4} xl={4}>
                     <ProductCard product={product} />
                   </Col>
                 ))
