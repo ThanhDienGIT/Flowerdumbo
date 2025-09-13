@@ -24,7 +24,7 @@ import {
 } from "@ant-design/icons";
 import { getListFlower, getFlowersByStatus } from "../function/FlowerAPI";
 import { getListCategory } from "../function/CategoryAPI";
-import banner from '../assets/images/banner.png'
+import banner from '../assets/images/banner.jpg'
 const { Title, Text, Paragraph } = Typography;
 
 const themeColors = {
