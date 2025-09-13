@@ -90,7 +90,7 @@ const AppHeader = ({ onMenuClick }) => {
         {/* Tầng 2: Logo và Icons */}
         <div style={styles.topBar}>
           <Text style={styles.topBarText}>
-            CHÀO MỪNG XƯỞNG HOA'S CỦA KHA
+            CHÀO MỪNG XƯỞNG HOA' S CỦA KHA
           </Text>
         </div>
         <Row style={styles.mainHeader} justify="space-between" align="middle">
@@ -118,7 +118,7 @@ const AppHeader = ({ onMenuClick }) => {
       <div className="mobile-header">
         <div style={styles.topBar}>
           <Text style={styles.topBarText}>
-           Chào mừng quý khách đến Xưởng Hoa's của Kha
+           Chào mừng quý khách đến Xưởng Hoa' s của Kha
           </Text>
         </div>
         {/* Tầng 2: Logo và Icons */}
