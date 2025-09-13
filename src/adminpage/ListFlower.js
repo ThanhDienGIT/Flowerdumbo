@@ -20,7 +20,13 @@ import {
   Avatar,
   Alert, // <<<--- (1) IMPORT THÊM 'Alert' TỪ ANTD
 } from "antd";
-import { EditOutlined, DeleteOutlined, InboxOutlined } from "@ant-design/icons";
+import {
+  EditOutlined,
+  DeleteOutlined,
+  InboxOutlined,
+  SearchOutlined,
+  ClearOutlined
+} from "@ant-design/icons";
 
 import {
   addFlower,
@@ -37,6 +43,7 @@ import {
 } from "../function/CategoryAPI";
 import JoditWrapper from "../components/JoditWrapper";
 import JoditView from "../components/JoditView";
+import Search from "antd/es/transfer/search";
 
 const initialFlowerState = FlowerDTO();
 
@@ -58,7 +65,10 @@ function ListFlower() {
   const [fileImage, setFileImage] = useState({});
   const [form] = Form.useForm();
   const [selectedCategories, setSelectedCategories] = useState([]);
-
+  const [allFlowers, setAllFlowers] = useState([]);
+  const [searchText, setSearchText] = useState("");
+  const [searchTypeCategory, setSearchTypeCategory] = useState(-1);
+  const [option, setOption] = useState([]);
   // <<<--- (2) TẠO STATE MỚI ĐỂ QUẢN LÝ ALERT ---
   const [alertInfo, setAlertInfo] = useState(null);
 
@@ -110,6 +120,7 @@ function ListFlower() {
     try {
       const data = await getListFlower();
       setFlowers(data.map((flower) => ({ ...flower, key: flower.id })));
+      setAllFlowers(data.map((flower) => ({ ...flower, key: flower.id })));
     } catch (err) {
       // <<<--- THAY THẾ NOTIFICATION BẰNG ALERT ---
       setAlertInfo({ type: "error", message: "Lỗi tải dữ liệu hoa" });
@@ -132,6 +143,23 @@ function ListFlower() {
     fetchCategories();
     fetchFlowers();
   }, []);
+
+  function convertNoDiacritics(str) {
+    return str
+      .normalize("NFD") // Tách dấu thành ký tự riêng biệt
+      .replace(/[\u0300-\u036f]/g, "") // Xóa tất cả dấu
+      .toLowerCase(); // Chuyển về chữ thường
+  }
+
+  const onsearch = () => {
+    setFlowers(
+      allFlowers.filter((x) =>
+        convertNoDiacritics(x.name)
+          .trim()
+          .includes(convertNoDiacritics(searchText).trim())
+      )
+    );
+  };
 
   // --- Các hàm handler ---
   const handleAdd = () => {
@@ -263,7 +291,7 @@ function ListFlower() {
                 fallback="https://via.placeholder.com/80?text=No+Image"
               />
             );
-          }else{
+          } else {
             return (
               <Image
                 src={url.fileList[0].url}
@@ -293,9 +321,7 @@ function ListFlower() {
       title: "Mô Tả",
       dataIndex: "description",
       key: "description",
-      render: (description) => (
-        <JoditView htmlContent={description}/>
-      ),
+      render: (description) => <JoditView htmlContent={description} />,
       width: 400,
     },
     {
@@ -326,20 +352,11 @@ function ListFlower() {
     },
   ];
 
-  function removeVietnameseTones(str) {
-    if (!str) {
-      return "";
-    }
-
-    str = str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    str = str.replace(/đ/g, "d").replace(/Đ/g, "D");
-
-    return str;
+  const clearSearch = () => {
+    setSearchText("")
+    setFlowers(allFlowers)
   }
 
-  const consoleCate = () => {
-    console.log(selectedCategories);
-  };
 
   return (
     <div style={{ padding: "20px" }}>
@@ -359,6 +376,28 @@ function ListFlower() {
       <Button type="primary" onClick={handleAdd} style={{ marginBottom: 16 }}>
         Thêm Hoa Mới
       </Button>
+
+      <Row gutter={[8, 24]} style={{marginBottom:15}}>
+        <Col xs={18} sm={12} md={6}>
+          <Search
+          value={searchText}
+            placeholder="input search text"
+            onChange={(e) => {
+              setSearchText(e.target.value);
+            }}
+          />
+        </Col>
+
+        <Col xs={6} sm={12} md={1}>
+          <Button icon={<SearchOutlined />} style={{width:'100%'}} onClick={onsearch} />
+        </Col>
+
+        <Col xs={6} sm={12} md={1}>
+          <Button icon={<ClearOutlined />} style={{width:'100%'}} onClick={clearSearch} />
+        </Col>
+      </Row>
+
+  
       <Table
         columns={columns}
         dataSource={flowers}

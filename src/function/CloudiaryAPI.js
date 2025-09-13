@@ -6,6 +6,7 @@ import {
   addCategory,
   editCategory,
   updateFlowerClassifications,
+  updateFlowerClassifications_add
 } from "./CategoryAPI";
 
 const CLOUD_NAME = "FlowerKey";
@@ -26,9 +27,6 @@ export const uploadImage = async (
     formData.append("cloud_name", CLOUD_NAME);
     formData.append("upload_preset", UPLOAD_PRESET);
     formData.append("api_key", API_KEY);
-
-    console.log('console main', data)
-
 
     if (data.image.file) {
       axios
@@ -51,7 +49,7 @@ export const uploadImage = async (
               object.id = result2.id;
               if (selectCategory.length > 0) {
                 selectCategory.map(async (ele) => {
-                  await updateFlowerClassifications(ele, [object]);
+                  await updateFlowerClassifications_add(ele, [object]);
                 });
               }
             } else {
@@ -107,6 +105,7 @@ export const uploadImage = async (
 
 // Cập nhật dữ liệu cấu hình website
 export const uploadImageCategory = async (data, editId, fetch, cancelModal) => {
+  
   try {
     const formData = new FormData();
     formData.append("file", data.image.file);
@@ -114,7 +113,18 @@ export const uploadImageCategory = async (data, editId, fetch, cancelModal) => {
     formData.append("upload_preset", UPLOAD_PRESET);
     formData.append("api_key", API_KEY);
 
-    axios
+    if (typeof(data.image) == "string") {
+       if (editId) {
+            await editCategory(editId.id, data);
+            eval(fetch)();
+          eval(cancelModal)();
+          } else {
+            await addCategory(data);
+            eval(fetch)();
+          eval(cancelModal)();
+          }
+    } else {
+      axios
       .post(
         `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`,
         formData
@@ -145,6 +155,9 @@ export const uploadImageCategory = async (data, editId, fetch, cancelModal) => {
         console.log(err);
         return false;
       });
+    }
+
+    
   } catch (error) {
     console.error("Lỗi khi cập nhật setting:", error);
     return false;

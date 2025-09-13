@@ -18,9 +18,9 @@ import {
   ShopOutlined,
   AppstoreAddOutlined,
   LogoutOutlined,
-  SettingOutlined
+  SettingOutlined,
 } from "@ant-design/icons";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Link, Outlet, useNavigate } from "react-router-dom";
 
 const { Header, Content, Footer, Sider } = Layout;
 const { Text } = Typography;
@@ -43,17 +43,9 @@ const items = [
     <AppstoreAddOutlined />
   ),
 
-  getItem(
-    "Cấu hình web",
-    "/admin/main/setting",
-    <SettingOutlined />
-  ),
+  getItem("Cấu hình web", "/admin/main/setting", <SettingOutlined />),
 
-  getItem(
-    "FeedBack",
-    "/admin/main/feedback",
-    <AppstoreAddOutlined />
-  ),
+  getItem("FeedBack", "/admin/main/feedback", <AppstoreAddOutlined />),
 
   // getItem(
   //   "Cấu hình web",
@@ -149,20 +141,33 @@ const Admin = () => {
               Nhập mật khẩu
             </Text>
           )}
+          <div>
+            {check ? (
+              <Button
+                type="primary"
+                icon={<LogoutOutlined />}
+                href="/"
+                style={{marginRight:10}}
+              >
+                Đi đến trang chủ
+              </Button>
+            ) : (
+              ""
+            )}
 
-          
-          {check ? (
-            <Button
-              type="primary"
-              danger
-              icon={<LogoutOutlined />}
-              onClick={handleLogout}
-            >
-              Đăng xuất
-            </Button>
-          ) : (
-            ""
-          )}
+            {check ? (
+              <Button
+                type="primary"
+                danger
+                icon={<LogoutOutlined />}
+                onClick={handleLogout}
+              >
+                Đăng xuất
+              </Button>
+            ) : (
+              ""
+            )}
+          </div>
         </Header>
 
         <Content style={{ margin: "0 16px" }}>
@@ -174,8 +179,6 @@ const Admin = () => {
               borderRadius: borderRadiusLG,
             }}
           >
-         
-
             <Outlet />
           </div>
         </Content>

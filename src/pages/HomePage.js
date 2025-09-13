@@ -20,6 +20,7 @@ import {
   TikTokOutlined,
   ShoppingCartOutlined,
   BorderBottomOutlined,
+  SafetyCertificateOutlined
 } from "@ant-design/icons";
 import { getListFlower, getFlowersByStatus } from "../function/FlowerAPI";
 import { getListCategory } from "../function/CategoryAPI";
@@ -176,7 +177,8 @@ const HomePage = () => {
   const [loadingQuickCategories, setLoadingQuickCategories] = useState(true);
 
   const [availableProducts, setAvailableProducts] = useState([]);
-  const [loadingAvailableProducts, setLoadingAvailableProducts] =useState(true);
+  const [loadingAvailableProducts, setLoadingAvailableProducts] =
+    useState(true);
 
   const [allFlowers, setAllFlowers] = useState([]);
   const [filteredFlowers, setFilteredFlowers] = useState([]);
@@ -277,7 +279,11 @@ const HomePage = () => {
         {/* Sử dụng aspectRatio để ảnh luôn vuông và responsive */}
         <Image
           alt={product.name}
-          src={typeof(product.image) == 'string' ? product.image : product.image.fileList[0].url}
+          src={
+            typeof product.image == "string"
+              ? product.image
+              : product.image.fileList[0].url
+          }
           style={{
             width: "100%",
             aspectRatio: "1 / 1", // Giữ cho ảnh luôn có tỷ lệ 1:1 (vuông)
@@ -532,6 +538,27 @@ const HomePage = () => {
           visibilityHeight={200}
           href="https://zalo.me/84843266691"
         />
+
+        {localStorage.getItem("adminLoggedIn") ? (
+          <FloatButton
+            size="large"
+            style={{
+            width: 50,
+            height: 50,
+            right: 30,
+            bottom: 170,
+            backgroundColor: "blue",
+          }}
+            icon={
+              <SafetyCertificateOutlined />
+            }
+            tooltip={<div>Đi đến trang ADMIN</div>}
+            visibilityHeight={200}
+            href="/admin/login"
+          />
+        ) : (
+          ""
+        )}
       </div>
 
       <style>{`

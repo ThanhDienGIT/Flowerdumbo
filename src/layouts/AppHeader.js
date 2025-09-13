@@ -90,14 +90,14 @@ const AppHeader = ({ onMenuClick }) => {
         {/* Tầng 2: Logo và Icons */}
         <div style={styles.topBar}>
           <Text style={styles.topBarText}>
-            XƯỞNG HOA' S KHA
+            XƯỞNG HOA' S KHA 
           </Text>
         </div>
         <Row style={styles.mainHeader} justify="space-between" align="middle">
           <Col></Col>
           <Col>
             <Link to={"/"}>
-              <img src={logo} alt="Logo" style={{ height: 150 }} />
+              <img src={logo} alt="Logo" style={{ height: 150 }} /> 
             </Link>
           </Col>
           <Col></Col>
@@ -144,7 +144,7 @@ const AppHeader = ({ onMenuClick }) => {
         </Row>
       </div>
 
-
+     
 
       {/* CSS để chuyển đổi giao diện và style cho menu */}
       <style>{`

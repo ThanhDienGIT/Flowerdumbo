@@ -9,7 +9,9 @@ function LoginAdmin() {
 
     // Mật khẩu cứng (hardcoded) - CHỈ DÙNG CHO MỤC ĐÍCH TEST/NỘI BỘ RẤT ĐƠN GIẢN
     // Vui lòng thay đổi mật khẩu này thành một chuỗi mạnh và giữ bí mật!
-    const SECRET_PASSWORD = 'Xuonghoacuakha#0612'; 
+    const SECRET_PASSWORD = process.env.REACT_APP_MATKHAU; 
+
+    console.log('SECRET_PASSWORD',SECRET_PASSWORD)
 
     useEffect(() => {
         // Kiểm tra xem đã đăng nhập chưa khi component mount
