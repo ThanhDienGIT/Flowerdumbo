@@ -224,7 +224,7 @@ function DetailProjects() {
               }}
             />
           </Col>
-
+ 
           {/* CỘT BÊN PHẢI: THÔNG TIN SẢN PHẨM */}
           <Col xs={24} lg={12}>
             <Space direction="vertical" size="middle" style={{ width: "100%" }}>

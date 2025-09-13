@@ -24,7 +24,7 @@ import {
 } from "@ant-design/icons";
 import { getListFlower, getFlowersByStatus } from "../function/FlowerAPI";
 import { getListCategory } from "../function/CategoryAPI";
-
+import banner from '../assets/images/banner.png'
 const { Title, Text, Paragraph } = Typography;
 
 const themeColors = {
@@ -347,7 +347,7 @@ const HomePage = () => {
       <div style={styles.contentWrapper}>
         <div class="banner">
           <img
-            src="https://dienhoasaigon.com.vn/wp-content/uploads/2022/03/banner-web_shop-hoa9x-01-scaled.jpg"
+            src={banner}
             alt="Banner"
             style={{ width: "100%", borderRadius: "8px", objectFit: "cover" }}
           />
@@ -419,7 +419,7 @@ const HomePage = () => {
               marginBottom: "20px",
             }}
           >
-            HOA TƯƠI NHÀ KHA
+            TẤT CẢ SẢN PHẨM
           </Title>
           <div className="searchBox">
             <Card

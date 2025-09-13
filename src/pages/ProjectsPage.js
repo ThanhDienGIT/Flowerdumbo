@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import {
   Layout,
   Card,
@@ -17,7 +17,8 @@ import {
   Divider,
   Select,
   Image,
-} from "antd"; // Thêm Image vào import
+  Slider,
+} from "antd"; // Thêm Image và Slider vào import
 import { TikTokOutlined } from "@ant-design/icons";
 import Icon from "@ant-design/icons";
 
@@ -81,7 +82,11 @@ const ProductCard = ({ product }) => (
       {/* --- ẢNH SẢN PHẨM --- */}
       <Image
         alt={product.name}
-        src={typeof(product.image)  == 'string' ? product.image : product.image.fileList[0].url}
+        src={
+          typeof product.image == "string"
+            ? product.image
+            : product.image.fileList[0].url
+        }
         style={{
           width: "100%",
           aspectRatio: "1 / 1",
@@ -145,63 +150,16 @@ const ProductCard = ({ product }) => (
 );
 
 // =============================================================================
-// COMPONENT BỘ LỌC (ĐÃ ĐƯỢC DI CHUYỂN RA NGOÀI)
-// =============================================================================
-const FilterSider = ({
-  searchTerm,
-  setSearchTerm,
-  selectedPrice,
-  setSelectedPrice,
-}) => (
-  <Sider
-    width={250}
-    breakpoint="lg"
-    collapsedWidth="0"
-    style={{
-      background: "#fff",
-      padding: "16px",
-      borderLeft: "1px solid #f0f0f0",
-      height: "100vh",
-      position: "sticky",
-      top: 0,
-    }}
-  >
-    <Title level={4}>Lọc sản phẩm</Title>
-    <Divider />
-
-    {/* TÌM THEO TÊN */}
-    <Title level={5}>Tìm theo tên</Title>
-    <Input.Search
-      placeholder="Nhập tên hoa..."
-      allowClear
-      value={searchTerm}
-      onChange={(e) => setSearchTerm(e.target.value)}
-      style={{ marginBottom: "24px" }}
-    />
-
-    {/* LỌC THEO GIÁ */}
-    <Title level={5}>Mức Giá</Title>
-    <Radio.Group
-      onChange={(e) => setSelectedPrice(e.target.value)}
-      value={selectedPrice}
-      style={{ display: "flex", flexDirection: "column", gap: "8px" }}
-    >
-      <Radio value="all">Tất cả</Radio>
-      <Radio value="0-500000">0 VND - 500.000 VND</Radio>
-      <Radio value="500000-1000000">500.000 VND - 1.000.000 VND</Radio>
-      <Radio value="1000000-1500000">1.000.000 VND - 1.500.000 VND</Radio>
-      <Radio value="1500000-2000000">1.500.000 VND - 2.000.000 VND</Radio>
-      <Radio value="2000000-4000000">2.000.000 VND - 4.000.000 VND</Radio>
-    </Radio.Group>
-    <Divider />
-  </Sider>
-);
-
-// =============================================================================
 // COMPONENT CHÍNH CỦA TRANG
 // =============================================================================
 function ProjectsPage() {
   const { categoryId } = useParams();
+
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0); // Scroll lên đầu trang (x=0, y=0)
+  }, [pathname]);
 
   // State cho dữ liệu
   const [products, setProducts] = useState([]);
@@ -210,7 +168,7 @@ function ProjectsPage() {
   const [sort, setSort] = useState("thapcao");
   // State cho các bộ lọc
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedPrice, setSelectedPrice] = useState("all");
+  const [selectedPriceRange, setSelectedPriceRange] = useState([0, 4000000]); // Mặc định toàn bộ range
 
   // State cho trạng thái loading
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -245,12 +203,12 @@ function ProjectsPage() {
       arrayFilter = allProducts.filter((x) => x.categoryId == categoryId);
     }
 
-    if (selectedPrice != "all") {
-      const arrayPrice = selectedPrice.split("-");
-      arrayFilter = arrayFilter.filter((x) => {
-        return x.price >= arrayPrice[0] && x.price <= arrayPrice[1];
-      });
-    }
+    // Lọc theo giá với thanh kéo
+    arrayFilter = arrayFilter.filter((x) => {
+      return (
+        x.price >= selectedPriceRange[0] && x.price <= selectedPriceRange[1]
+      );
+    });
 
     if (searchTerm.length > 0) {
       arrayFilter = arrayFilter.filter((x) => {
@@ -265,7 +223,7 @@ function ProjectsPage() {
     }
 
     setProducts(arrayFilter);
-  }, [categoryId, selectedPrice, searchTerm, sort]);
+  }, [categoryId, selectedPriceRange, searchTerm, sort]);
 
   return (
     <ConfigProvider theme={themeConfig}>
@@ -281,28 +239,64 @@ function ProjectsPage() {
             <Breadcrumb.Item>{currentCategoryName}</Breadcrumb.Item>
           </Breadcrumb>
 
-          {/* Phần tiêu đề và sắp xếp */}
-          <Row
-            justify="space-between"
-            align="middle"
-            style={{ marginBottom: "20px" }}
-          >
+          {/* Phần tiêu đề */}
+          <Row justify="space-between" align="middle">
             <Col>
               <Title level={2} style={{ margin: 0 }}>
                 {currentCategoryName}
               </Title>
             </Col>
-            <Col>
-              <Space>
-                <Text>Sắp xếp:</Text>
-                <Select value={sort} onChange={(e)=>{setSort(e)}} style={{ width: 150 }}>
-                  <Option value="thapcao">Giá: Thấp đến cao</Option>
-                  <Option value="caothap">Giá: Cao đến thấp</Option>
-                </Select>
-              </Space>
+          </Row>
+          {/* Phần filter mới: Dạng ngang, responsive */}
+          <Row gutter={[16, 24]} >
+            <Col xs={24} md={3}>
+              <Title level={5} style={{ marginBottom: 4 }}>
+                Sắp xếp
+              </Title>
+              <Select
+                value={sort}
+                onChange={(e) => {
+                  setSort(e);
+                }}
+                style={{ width: "100%" }}
+              >
+                <Option value="thapcao">Giá: Thấp đến cao</Option>
+                <Option value="caothap">Giá: Cao đến thấp</Option>
+              </Select>
+            </Col>
+
+            <Col xs={24} md={4}>
+              <Title level={5} style={{ marginBottom: 4 }}>
+                Tìm theo tên
+              </Title>
+              <Input.Search
+                placeholder="Nhập tên hoa..."
+                allowClear
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </Col>
+            <Col xs={24} md={4}>
+              <Title level={5} style={{ marginBottom: 4 }}>
+                Mức giá (VND)
+              </Title>
+              <Slider
+                range
+                min={0}
+                max={4000000}
+                step={100000}
+                defaultValue={[0, 4000000]}
+                value={selectedPriceRange}
+                onChange={(value) => setSelectedPriceRange(value)}
+                marks={{
+                  0: "0",
+                  4000000: "4.000.000",
+                }}
+                tipFormatter={(value) => formatPriceWithMask(value)}
+              />
             </Col>
           </Row>
-
+          <Divider />
           <Content style={{ minHeight: 280 }}>
             {loadingProducts ? (
               <div style={{ textAlign: "center", padding: "50px" }}>
@@ -329,14 +323,6 @@ function ProjectsPage() {
             )}
           </Content>
         </Layout>
-
-        {/* SIDER BỘ LỌC BÊN PHẢI (đã truyền props vào) */}
-        <FilterSider
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          selectedPrice={selectedPrice}
-          setSelectedPrice={setSelectedPrice}
-        />
       </Layout>
     </ConfigProvider>
   );
