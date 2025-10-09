@@ -483,12 +483,16 @@ const HomePage = () => {
             // --- CẬP NHẬT: Giảm khoảng cách (gutter) để card dày hơn ---
             <Row gutter={[16, 24]} justify="start" align="top">
               {filteredFlowers.length > 0 ? (
-                filteredFlowers.map((product) => (
+                filteredFlowers.map((product) => {
+                
+                  console.log(product)
+                  
+                return (
                   // --- CẬP NHẬT: 4 cột trên mọi kích thước màn hình ---
                   <Col key={product.id} xs={12} sm={12} md={6} lg={4} xl={4}>
                     <ProductCard product={product} />
                   </Col>
-                ))
+                )})
               ) : (
                 <Col span={24} style={{ textAlign: "center", padding: "40px" }}>
                   <Text>Không tìm thấy sản phẩm nào phù hợp với bộ lọc.</Text>

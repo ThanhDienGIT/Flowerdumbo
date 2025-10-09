@@ -35,6 +35,13 @@ function DetailProjects() {
     try {
       setLoadingFlowers(true);
       const flowersData = await getListFlower();
+
+      flowersData.map((ele) => {
+        if (ele.id == detailId) {
+          setFlowerDetails(ele);
+        }
+      });
+
       setAllFlowers(flowersData);
       setFilteredFlowers(flowersData);
 
@@ -48,32 +55,15 @@ function DetailProjects() {
       console.error("Lỗi khi đọc dữ liệu hoa từ Firebase:", error);
     } finally {
       setLoadingFlowers(false);
+      setLoading(false);
     }
   };
 
   useEffect(() => {
+    setLoading(true);
     fetchFlower();
-    const fetchFlowerDetails = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await getFlowerById(detailId);
-        console.log(data);
-        if (data) {
-          setFlowerDetails(data);
-        } else {
-          setError("Không tìm thấy thông tin sản phẩm này.");
-        }
-      } catch (err) {
-        console.error("Lỗi khi tải chi tiết sản phẩm:", err);
-        setError("Đã xảy ra lỗi khi tải sản phẩm. Vui lòng thử lại sau.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     if (detailId) {
-      fetchFlowerDetails();
+fetchFlower();
     } else {
       setLoading(false);
       setError("Không có ID sản phẩm được cung cấp.");
@@ -120,7 +110,11 @@ function DetailProjects() {
         {/* --- ẢNH SẢN PHẨM --- */}
         <Image
           alt={product.name}
-          src={typeof(product.image)  == 'string' ? product.image : product.image.fileList[0].url}
+          src={
+            typeof product.image == "string"
+              ? product.image
+              : product.image.fileList[0].url
+          }
           style={{
             width: "100%",
             aspectRatio: "1 / 1", // Giữ cho ảnh luôn có tỷ lệ 1:1 (vuông)
@@ -142,12 +136,12 @@ function DetailProjects() {
               fontWeight: 500,
               color: "#067862",
               // Thêm các thuộc tính để giới hạn text trong 2 dòng
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              display: '-webkit-box',
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              display: "-webkit-box",
               WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              minHeight: '48px', // Chiều cao tối thiểu cho 2 dòng
+              WebkitBoxOrient: "vertical",
+              minHeight: "48px", // Chiều cao tối thiểu cho 2 dòng
             }}
           >
             {product.name}
@@ -213,7 +207,11 @@ function DetailProjects() {
           {/* CỘT BÊN TRÁI: HÌNH ẢNH SẢN PHẨM */}
           <Col xs={24} lg={12}>
             <Image
-              src={typeof(flowerDetails.image) == 'string' ? flowerDetails.image : flowerDetails.image.fileList[0].url}
+              src={
+                typeof flowerDetails.image == "string"
+                  ? flowerDetails.image
+                  : flowerDetails.image.fileList[0].url
+              }
               alt={flowerDetails.name}
               style={{
                 borderRadius: "8px",
@@ -224,7 +222,7 @@ function DetailProjects() {
               }}
             />
           </Col>
- 
+
           {/* CỘT BÊN PHẢI: THÔNG TIN SẢN PHẨM */}
           <Col xs={24} lg={12}>
             <Space direction="vertical" size="middle" style={{ width: "100%" }}>
