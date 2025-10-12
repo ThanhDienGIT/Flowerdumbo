@@ -119,7 +119,7 @@ const Footer = () => {
                   }}
                   src={blog} // <-- Ảnh minh họa (bạn có thể thay đổi)
                   preview={false}
-                  alt="Feedback từ khách hnagf"
+                  alt="Feedback từ khách hàng"
                 />
               </RouterLink>
             </Col>
@@ -174,7 +174,7 @@ const Footer = () => {
                   />
                 </Button>
                   <Button
-                  href="https://zalo.me/84843266691"
+                  href="https://www.tiktok.com/@xng.hoa.online"
                   target="_blank"
                   rel="noopener noreferrer"
                   shape="circle"
