@@ -1,74 +1,62 @@
-import {
-  ref,
-  onValue,
-  push,
-  get,
-  set,
-  remove,
-  update,
-  orderByChild,
-  equalTo,
-  query,
-} from "firebase/database";
-import { database } from "../firebaseConfig/firebase-config";
-import CategoryDTO from "../DTO/CategoryDTO"; // Import CategoryDTO
+// src/function/CategoryAPI.js
+//
+// Tầng dữ liệu cho node "category" và bảng nối "FlowerClassification".
+// Thay đổi so với bản cũ:
+//  - Thêm / sửa / xoá danh mục chỉ ghi đúng bản ghi cần đổi.
+//  - Xoá danh mục xoá luôn các phân loại của nó (không còn bản ghi "mồ côi").
+//  - Gán hoa vào danh mục chỉ thêm/bớt đúng những dòng thay đổi trong một
+//    lần ghi, không ghi đè cả bảng và không tạo bản trùng.
+//  - Thêm setFlowerCategories: đặt CHÍNH XÁC các danh mục của một hoa
+//    (bản cũ khi sửa hoa đã xoá mất các hoa khác trong cùng danh mục).
 
-/**
- * Lấy danh sách tất cả các Category từ Realtime Database.
- * @returns {Array} Một mảng các đối tượng Category.
- */
+import { ref, set, update, push } from "firebase/database";
+import { database } from "../firebaseConfig/firebase-config";
+import CategoryDTO from "../DTO/CategoryDTO";
+import {
+  readNode,
+  toEntries,
+  toList,
+  sameId,
+  nextId,
+  clean,
+  normalizeId,
+  normalizeImage,
+} from "./dbUtils";
+import { CLASSIFICATION_PATH, FLOWER_PATH, pickFlowerFields } from "./FlowerAPI";
+
+const CATEGORY_PATH = "category";
+
+const toCategory = (raw) =>
+  CategoryDTO({ ...raw, image: normalizeImage(raw.image) });
+
+const newClassificationKey = () => push(ref(database, CLASSIFICATION_PATH)).key;
+
+/** Một dòng phân loại: bản sao các trường của hoa + categoryId + flowerId. */
+const buildClassification = (flower, categoryId) =>
+  clean({
+    ...pickFlowerFields(flower),
+    id: flower.id, // trang cũ dùng id này để mở chi tiết hoa
+    flowerId: flower.id,
+    categoryId: normalizeId(categoryId),
+  });
+
+/** Lấy danh sách tất cả danh mục. */
 const getListCategory = async () => {
   try {
-    const categoriesRef = ref(database, "category"); // Tham chiếu đến node 'category'
-    const snapshot = await get(categoriesRef);
-
-    if (snapshot.exists()) {
-      const data = snapshot.val();
-      return Object.values(data);
-    } else {
-      console.log("Không có dữ liệu Category nào trong database.");
-      return [];
-    }
+    return toList(await readNode(CATEGORY_PATH)).map(toCategory);
   } catch (error) {
     console.error("Lỗi khi lấy danh sách Category:", error);
     throw error;
   }
 };
 
-/**
- * Thêm một Category mới vào Realtime Database.
- * @param {object} categoryData - Đối tượng chứa dữ liệu của Category mới (ví dụ: {name, url, image}).
- * @returns {object} Đối tượng Category vừa được thêm.
- */
+/** Thêm danh mục mới. */
 const addCategory = async (categoryData) => {
   try {
-    const categoriesRef = ref(database, "category");
-    const snapshot = await get(categoriesRef);
-
-    let currentCategories = [];
-    if (snapshot.exists()) {
-      const data = snapshot.val();
-      if (Array.isArray(data)) {
-        currentCategories = data;
-      } else if (typeof data === "object" && data !== null) {
-        currentCategories = Object.values(data);
-      }
-    }
-
-    const newId =
-      currentCategories.length > 0
-        ? Math.max(...currentCategories.map((c) => c.id || 0)) + 1
-        : 0;
-
-    const newCategory = CategoryDTO({
-      id: newId,
-      ...categoryData,
-    });
-
-    currentCategories.push(newCategory);
-    await set(categoriesRef, currentCategories);
-
-    console.log(`Thêm Category thành công với ID: ${newId}`);
+    const current = toList(await readNode(CATEGORY_PATH));
+    const newId = nextId(current);
+    const newCategory = toCategory({ ...categoryData, id: newId });
+    await set(ref(database, `${CATEGORY_PATH}/${newId}`), newCategory);
     return newCategory;
   } catch (error) {
     console.error("Lỗi khi thêm Category:", error);
@@ -76,77 +64,43 @@ const addCategory = async (categoryData) => {
   }
 };
 
-/**
- * Cập nhật thông tin của một Category dựa trên ID.
- * @param {number} id - ID của Category cần cập nhật.
- * @param {object} updatedObject - Đối tượng chứa các trường dữ liệu cần cập nhật (name, url, image).
- * @returns {object|null} Đối tượng Category đã cập nhật hoặc null nếu không tìm thấy.
- */
+/** Cập nhật danh mục theo id. */
 const editCategory = async (id, updatedObject) => {
   try {
-    const categoriesRef = ref(database, "category");
-    const snapshot = await get(categoriesRef);
-
-    if (snapshot.exists()) {
-      let currentCategories = Object.values(snapshot.val());
-
-      const categoryIndex = currentCategories.findIndex(
-        (category) => category.id === id
-      );
-
-      if (categoryIndex !== -1) {
-        currentCategories[categoryIndex] = CategoryDTO({
-          ...currentCategories[categoryIndex],
-          ...updatedObject,
-        });
-
-        await set(categoriesRef, currentCategories);
-        console.log(`Cập nhật Category với ID ${id} thành công.`);
-        return currentCategories[categoryIndex];
-      } else {
-        console.warn(`Không tìm thấy Category với ID: ${id} để cập nhật.`);
-        return null;
-      }
-    } else {
-      console.warn("Không có dữ liệu Category để cập nhật.");
+    const entry = toEntries(await readNode(CATEGORY_PATH)).find(([, c]) => sameId(c.id, id));
+    if (!entry) {
+      console.warn(`Không tìm thấy Category với ID: ${id} để cập nhật.`);
       return null;
     }
+    const [key, old] = entry;
+    const image = normalizeImage(updatedObject.image) || normalizeImage(old.image);
+    const merged = toCategory({ ...old, ...clean(updatedObject), image, id: old.id });
+    await set(ref(database, `${CATEGORY_PATH}/${key}`), merged);
+    return merged;
   } catch (error) {
     console.error(`Lỗi khi cập nhật Category với ID ${id}:`, error);
     throw error;
   }
 };
 
-/**
- * Xóa một Category khỏi Realtime Database dựa trên ID.
- * @param {number} id - ID của Category cần xóa.
- * @returns {boolean} True nếu xóa thành công, false nếu không tìm thấy.
- */
+/** Xoá danh mục và các phân loại của nó trong một lần ghi. */
 const deleteCategory = async (id) => {
   try {
-    const categoriesRef = ref(database, "category");
-    const snapshot = await get(categoriesRef);
-
-    if (snapshot.exists()) {
-      let currentCategories = Object.values(snapshot.val());
-      const initialLength = currentCategories.length;
-
-      let updatedCategories = currentCategories.filter(
-        (category) => category.id !== id
-      );
-
-      if (updatedCategories.length < initialLength) {
-        await set(categoriesRef, updatedCategories);
-        console.log(`Xóa Category với ID ${id} thành công.`);
-        return true;
-      } else {
-        console.warn(`Không tìm thấy Category với ID: ${id} để xóa.`);
-        return false;
-      }
-    } else {
-      console.warn("Không có dữ liệu Category để xóa.");
+    const [catData, classData] = await Promise.all([
+      readNode(CATEGORY_PATH),
+      readNode(CLASSIFICATION_PATH),
+    ]);
+    const entry = toEntries(catData).find(([, c]) => sameId(c.id, id));
+    if (!entry) {
+      console.warn(`Không tìm thấy Category với ID: ${id} để xóa.`);
       return false;
     }
+    const updates = { [`${CATEGORY_PATH}/${entry[0]}`]: null };
+    toEntries(classData).forEach(([cKey, c]) => {
+      if (sameId(c.categoryId, id)) updates[`${CLASSIFICATION_PATH}/${cKey}`] = null;
+    });
+    await update(ref(database), updates);
+    return true;
   } catch (error) {
     console.error(`Lỗi khi xóa Category với ID ${id}:`, error);
     throw error;
@@ -155,276 +109,155 @@ const deleteCategory = async (id) => {
 
 const getFlowerClassifications = async () => {
   try {
-    const classificationRef = ref(database, "FlowerClassification");
-    const snapshot = await get(classificationRef);
-    if (snapshot.exists()) {
-      const data = Object.values(snapshot.val());
-      return data;
-    }
-    return [];
+    return toList(await readNode(CLASSIFICATION_PATH));
   } catch (error) {
-    console.error(`Lỗi khi lấy phân loại hoa cho Category`, error);
+    console.error("Lỗi khi lấy phân loại hoa:", error);
     throw error;
   }
 };
 
-const getFlowerClassificationsByCategoryId = async (categoryId) => {
+const getFlowerClassificationsByCategoryId = async (categoryId) =>
+  (await getFlowerClassifications()).filter((item) => sameId(item.categoryId, categoryId));
+
+const getCategoryClassificationsByFlowerId = async (flowerId) =>
+  (await getFlowerClassifications()).filter((item) => sameId(item.flowerId, flowerId));
+
+/**
+ * Đặt danh sách hoa của MỘT danh mục đúng bằng `selectedFlowers`
+ * (thêm hoa mới chọn, bỏ hoa bị bỏ chọn, giữ nguyên phần còn lại).
+ */
+const updateFlowerClassifications = async (categoryId, selectedFlowers) => {
   try {
-    const classificationRef = ref(database, "FlowerClassification");
-    const snapshot = await get(classificationRef);
-    if (snapshot.exists()) {
-      const data = Object.values(snapshot.val());
-      return data.filter(
-        (item) => Number(item.categoryId) == Number(categoryId)
-      );
-    }
-    return [];
-  } catch (error) {
-    console.error(
-      `Lỗi khi lấy phân loại hoa cho Category ${categoryId}:`,
-      error
+    const entries = toEntries(await readNode(CLASSIFICATION_PATH)).filter(([, c]) =>
+      sameId(c.categoryId, categoryId)
     );
+    const wanted = new Map(selectedFlowers.map((f) => [String(f.id), f]));
+    const existing = new Set();
+    const updates = {};
+
+    entries.forEach(([key, c]) => {
+      const fid = String(c.flowerId ?? c.id);
+      if (!wanted.has(fid) || existing.has(fid)) {
+        updates[`${CLASSIFICATION_PATH}/${key}`] = null; // bỏ chọn hoặc bản trùng
+      } else {
+        existing.add(fid);
+        updates[`${CLASSIFICATION_PATH}/${key}`] = buildClassification(wanted.get(fid), categoryId);
+      }
+    });
+    wanted.forEach((flower, fid) => {
+      if (!existing.has(fid)) {
+        updates[`${CLASSIFICATION_PATH}/${newClassificationKey()}`] = buildClassification(flower, categoryId);
+      }
+    });
+
+    if (Object.keys(updates).length > 0) await update(ref(database), updates);
+  } catch (error) {
+    console.error(`Lỗi khi cập nhật phân loại hoa cho Category ${categoryId}:`, error);
     throw error;
   }
 };
 
-const getCategoryClassificationsByFlowerId = async (flowerid) => {
+/** Thêm các hoa vào danh mục (không xoá hoa đang có, không tạo bản trùng). */
+const updateFlowerClassifications_add = async (categoryId, flowersToAdd) => {
   try {
-    const classificationRef = ref(database, "FlowerClassification");
-    const snapshot = await get(classificationRef);
-    if (snapshot.exists()) {
-      const data = Object.values(snapshot.val());
-      return data.filter((item) => Number(item.flowerId) == Number(flowerid));
-    }
-    return [];
+    const present = new Set(
+      toList(await readNode(CLASSIFICATION_PATH))
+        .filter((c) => sameId(c.categoryId, categoryId))
+        .map((c) => String(c.flowerId ?? c.id))
+    );
+    const updates = {};
+    flowersToAdd.forEach((flower) => {
+      if (!present.has(String(flower.id))) {
+        present.add(String(flower.id));
+        updates[`${CLASSIFICATION_PATH}/${newClassificationKey()}`] = buildClassification(flower, categoryId);
+      }
+    });
+    if (Object.keys(updates).length > 0) await update(ref(database), updates);
   } catch (error) {
-    console.error(`Lỗi khi lấy phân loại hoa cho Category ${flowerid}:`, error);
+    console.error(`Lỗi khi thêm hoa vào Category ${categoryId}:`, error);
     throw error;
   }
 };
 
 /**
- * Cập nhật danh sách phân loại hoa cho một Category.
- * Hàm này sẽ nhận một mảng các { categoryId, flowerId } và ghi đè vào database.
- * Nó cũng sẽ đảm bảo mỗi record là duy nhất.
- * @param {number} categoryId - ID của Category đang được thao tác.
- * @param {Array<number>} selectedFlowerIds - Mảng các ID hoa được chọn cho Category này.
+ * Đặt CHÍNH XÁC các danh mục cho một hoa (dùng khi thêm/sửa hoa):
+ * thêm vào danh mục mới chọn, gỡ khỏi danh mục bị bỏ chọn, cập nhật bản sao.
  */
-const updateFlowerClassifications = async (categoryId, selectedFlowers) => {
-  try {
-    console.log(categoryId);
-    console.log(selectedFlowers);
-
-    const classificationRef = ref(database, "FlowerClassification");
-
-    // 1. Lấy tất cả các phân loại hiện có từ Firebase
-    const snapshot = await get(classificationRef);
-    let allClassifications = [];
-    if (snapshot.exists()) {
-      allClassifications = Object.values(snapshot.val());
-    }
-
-    console.log("allClassifications", allClassifications);
-
-    // 2. Lọc để giữ lại các phân loại KHÔNG thuộc về category đang chỉnh sửa.
-    const otherCategoriesClassifications = allClassifications.filter(
-      (item) => Number(item.categoryId) != Number(categoryId)
-    );
-
-    // 3. [THAY ĐỔI CHÍNH Ở ĐÂY]
-    // Tạo danh sách phân loại mới cho category này.
-    // Với mỗi hoa được chọn, ta tạo một object mới bao gồm:
-    // - categoryId
-    // - Toàn bộ các trường dữ liệu của chính hoa đó (dùng toán tử spread `...flower`)
-    const newClassificationsForThisCategory = selectedFlowers.map((flower) => ({
-      ...flower, // Trải toàn bộ các trường của hoa: id, name, price, image, etc.
-      categoryId: categoryId, // Thêm/Ghi đè trường categoryId
-      flowerId: flower.id, // Thêm trường flowerId để truy vấn cho rõ ràng, mặc dù đã có id
-    }));
-
-    console.log(
-      "newClassificationsForThisCategory",
-      newClassificationsForThisCategory
-    );
-
-    // 4. Kết hợp danh sách phân loại của các category khác với danh sách phân loại mới của category này.
-    const finalClassifications = [
-      ...otherCategoriesClassifications,
-      ...newClassificationsForThisCategory,
-    ];
-
-    console.log("finalClassifications", finalClassifications);
-
-    // 5. Ghi đè toàn bộ node 'FlowerClassification' bằng dữ liệu cuối cùng đã được kết hợp.
-    await set(classificationRef, finalClassifications);
-
-    console.log(
-      `Cập nhật phân loại hoa cho Category ${categoryId} thành công.`
-    );
-  } catch (error) {
-    console.error(
-      `Lỗi khi cập nhật phân loại hoa cho Category ${categoryId}:`,
-      error
-    );
-    throw error;
-  }
-};
-
-const updateFlowerClassifications_add = async (categoryId, selectedFlowers) => {
-  try {
-    console.log(categoryId);
-    console.log(selectedFlowers);
-
-    const classificationRef = ref(database, "FlowerClassification");
-
-    // 1. Lấy tất cả các phân loại hiện có từ Firebase
-    const snapshot = await get(classificationRef);
-    let allClassifications = [];
-    if (snapshot.exists()) {
-      allClassifications = Object.values(snapshot.val());
-    }
-
-    console.log("allClassifications", allClassifications);
-
-    // 2. Lọc để giữ lại các phân loại KHÔNG thuộc về category đang chỉnh sửa.
-    const otherCategoriesClassifications = allClassifications.filter(
-      (item) => Number(item.categoryId) != Number(categoryId)
-    );
-
-    const CategoriesClassifications = allClassifications.filter(
-      (item) => Number(item.categoryId) == Number(categoryId)
-    );
-
-    // 3. [THAY ĐỔI CHÍNH Ở ĐÂY]
-    // Tạo danh sách phân loại mới cho category này.
-    // Với mỗi hoa được chọn, ta tạo một object mới bao gồm:
-    // - categoryId
-    // - Toàn bộ các trường dữ liệu của chính hoa đó (dùng toán tử spread `...flower`)
-    const newClassificationsForThisCategory = selectedFlowers.map((flower) => ({
-      ...flower, // Trải toàn bộ các trường của hoa: id, name, price, image, etc.
-      categoryId: categoryId, // Thêm/Ghi đè trường categoryId
-      flowerId: flower.id, // Thêm trường flowerId để truy vấn cho rõ ràng, mặc dù đã có id
-    }));
-
-    console.log(
-      "newClassificationsForThisCategory",
-      newClassificationsForThisCategory
-    );
-
-    // 4. Kết hợp danh sách phân loại của các category khác với danh sách phân loại mới của category này.
-    const finalClassifications = [
-      ...CategoriesClassifications,
-      ...otherCategoriesClassifications,
-      ...newClassificationsForThisCategory,
-    ];
-
-    console.log("finalClassifications", finalClassifications);
-
-    // 5. Ghi đè toàn bộ node 'FlowerClassification' bằng dữ liệu cuối cùng đã được kết hợp.
-    await set(classificationRef, finalClassifications);
-
-    console.log(
-      `Cập nhật phân loại hoa cho Category ${categoryId} thành công.`
-    );
-  } catch (error) {
-    console.error(
-      `Lỗi khi cập nhật phân loại hoa cho Category ${categoryId}:`,
-      error
-    );
-    throw error;
-  }
-};
-
-
-const addCategoryWhenAddFlower = async (flower, floweridSend) => {
-  try {
-    const classificationRef = ref(database, "FlowerClassification");
-
-    const snapshot = await get(classificationRef);
-    let allClassifications = [];
-    if (snapshot.exists()) {
-      allClassifications = Object.values(snapshot.val());
-    }
-
-    const newId =
-      allClassifications.length > 0
-        ? Math.max(...allClassifications.map((f) => f.id || 0)) + 1
-        : 0;
-
-    flower.flowerId = floweridSend;
-    flower.id = newId;
-    allClassifications.push(flower);
-    await set(classificationRef, allClassifications);
-  } catch (error) {
-    console.error("Lỗi khi thêm Category:", error);
-  }
-};
-
-// <--- THÊM EXPORT VÀO DÒNG NÀY --->
-const getCategoryById = (categoryId) => {
-  return new Promise((resolve, reject) => {
-    const categoryRef = ref(database, `category/${categoryId}`);
-    onValue(
-      categoryRef,
-      (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          // Gọi DTO như một hàm và truyền vào một object
-          resolve(
-            CategoryDTO({
-              id: categoryId,
-              name: data.name,
-              image: data.image,
-              url: data.url,
-            })
-          );
-        } else {
-          resolve(null); // Không tìm thấy category
-        }
-      },
-      (error) => {
-        console.error(`Lỗi khi đọc category ${categoryId} từ Firebase:`, error);
-        reject(error);
-      },
-      {
-        onlyOnce: true,
-      }
-    );
-  });
-};
-
-const getFlowersByCategoryId = async (categoryId) => {
-  try {
-    // Chuyển đổi ID từ chuỗi (string) sang số (number)
-    const categoryIdAsNumber = Number(categoryId);
-
-    const classificationRef = ref(database, "FlowerClassification");
-
-    // Sử dụng ID đã được chuyển đổi thành số để truy vấn
-    const classificationQuery = query(
-      classificationRef,
-      orderByChild("categoryId"),
-      equalTo(categoryIdAsNumber)
-    );
-
-    const snapshot = await get(classificationQuery);
-
-    if (snapshot.exists()) {
-      const data = snapshot.val();
-      return Object.values(data);
+const setFlowerCategories = async (flower, categoryIds = []) => {
+  const wanted = new Set(categoryIds.map(String));
+  const entries = toEntries(await readNode(CLASSIFICATION_PATH)).filter(([, c]) =>
+    sameId(c.flowerId, flower.id)
+  );
+  const kept = new Set();
+  const updates = {};
+  entries.forEach(([key, c]) => {
+    const cid = String(c.categoryId);
+    if (!wanted.has(cid) || kept.has(cid)) {
+      updates[`${CLASSIFICATION_PATH}/${key}`] = null;
     } else {
-      return [];
+      kept.add(cid);
+      updates[`${CLASSIFICATION_PATH}/${key}`] = buildClassification(flower, c.categoryId);
     }
+  });
+  categoryIds.forEach((cid) => {
+    if (!kept.has(String(cid))) {
+      kept.add(String(cid));
+      updates[`${CLASSIFICATION_PATH}/${newClassificationKey()}`] = buildClassification(flower, cid);
+    }
+  });
+  if (Object.keys(updates).length > 0) await update(ref(database), updates);
+};
+
+/** Giữ tương thích: thêm một hoa vào danh mục `flower.categoryId`. */
+const addCategoryWhenAddFlower = async (flower, flowerIdSend) => {
+  try {
+    await updateFlowerClassifications_add(flower.categoryId, [{ ...flower, id: flowerIdSend }]);
   } catch (error) {
-    console.error(
-      `Lỗi khi lấy danh sách hoa theo category ID ${categoryId}:`,
-      error
-    );
-    throw error;
+    console.error("Lỗi khi thêm phân loại:", error);
   }
 };
 
-// Chỉ export các hàm API, không export 'database'
+/** Lấy một danh mục theo id (null nếu không có). */
+const getCategoryById = async (categoryId) => {
+  const direct = await readNode(`${CATEGORY_PATH}/${categoryId}`);
+  if (direct && sameId(direct.id, categoryId)) return toCategory(direct);
+  const all = await getListCategory();
+  return all.find((c) => sameId(c.id, categoryId)) || null;
+};
+
+/** Các dòng phân loại thuộc một danh mục. */
+const getFlowersByCategoryId = async (categoryId) =>
+  getFlowerClassificationsByCategoryId(categoryId);
+
+/**
+ * Đọc MỘT lần cả 3 node (danh mục, hoa, phân loại) cho các trang bán hàng.
+ * Trả về hoa của từng danh mục là dữ liệu mới nhất (không dùng bản sao).
+ */
+const getCatalog = async () => {
+  const [catData, flowerData, classData] = await Promise.all([
+    readNode(CATEGORY_PATH),
+    readNode(FLOWER_PATH),
+    readNode(CLASSIFICATION_PATH),
+  ]);
+  const categories = toList(catData).map(toCategory);
+  const flowers = toList(flowerData).map((f) => ({ ...f, image: normalizeImage(f.image) }));
+  const byId = new Map(flowers.map((f) => [String(f.id), f]));
+  const classifications = toList(classData);
+  const flowersByCategory = {};
+  const categoryIdsByFlower = {};
+  classifications.forEach((c) => {
+    const fid = String(c.flowerId ?? c.id);
+    const flower = byId.get(fid);
+    if (!flower) return;
+    const cid = String(c.categoryId);
+    flowersByCategory[cid] = flowersByCategory[cid] || [];
+    if (!flowersByCategory[cid].some((f) => String(f.id) === fid)) flowersByCategory[cid].push(flower);
+    categoryIdsByFlower[fid] = categoryIdsByFlower[fid] || [];
+    if (!categoryIdsByFlower[fid].includes(cid)) categoryIdsByFlower[fid].push(cid);
+  });
+  return { categories, flowers, classifications, flowersByCategory, categoryIdsByFlower };
+};
+
 export {
   addCategory,
   getListCategory,
@@ -437,5 +270,7 @@ export {
   addCategoryWhenAddFlower,
   getCategoryClassificationsByFlowerId,
   getFlowerClassifications,
-  updateFlowerClassifications_add
+  updateFlowerClassifications_add,
+  setFlowerCategories,
+  getCatalog,
 };

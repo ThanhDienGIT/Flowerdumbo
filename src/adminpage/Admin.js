@@ -10,17 +10,12 @@ import {
   notification,
 } from "antd"; // <-- Đã thêm notification vào đây
 import {
-  DesktopOutlined,
-  PieChartOutlined,
-  TeamOutlined,
-  UserOutlined,
-  FileOutlined,
   ShopOutlined,
   AppstoreAddOutlined,
   LogoutOutlined,
   SettingOutlined,
 } from "@ant-design/icons";
-import { Link, Outlet, useNavigate } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 const { Header, Content, Footer, Sider } = Layout;
 const { Text } = Typography;
@@ -70,6 +65,7 @@ const Admin = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [check, setCheck] = useState(false);
   const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   const {
     token: { colorBgContainer, borderRadiusLG },
@@ -116,7 +112,7 @@ const Admin = () => {
         />
         <Menu
           theme="dark"
-          defaultSelectedKeys={["/admin"]}
+          selectedKeys={[pathname]}
           mode="inline"
           items={items}
           onSelect={({ key }) => navigate(key)}

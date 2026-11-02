@@ -1,207 +1,234 @@
-// src/components/Category.js
+// src/adminpage/Category.js
+// Quản lý danh mục: thêm / sửa / xoá (xoá luôn phân loại liên quan),
+// gán hoa vào danh mục với tìm kiếm + chọn tất cả.
 
-import React, { useState, useEffect } from 'react';
-// --- THAY ĐỔI 1: Thêm 'Upload' và icon 'InboxOutlined' ---
-import { Button, Table, Modal, Form, Input, Space, notification, Popconfirm, Image, Checkbox, Row, Col, Upload } from 'antd';
-import { EditOutlined, DeleteOutlined, PlusOutlined, InboxOutlined } from '@ant-design/icons';
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Button,
+  Table,
+  Modal,
+  Form,
+  Input,
+  Space,
+  Popconfirm,
+  Image,
+  Checkbox,
+  Upload,
+  Tag,
+  Empty,
+  message,
+} from "antd";
+import { EditOutlined, DeleteOutlined, PlusOutlined, InboxOutlined, AppstoreAddOutlined } from "@ant-design/icons";
 
-// Import DTO và API cho Category
-import CategoryDTO from '../DTO/CategoryDTO';
-import { addCategory, getListCategory, editCategory, deleteCategory, getFlowerClassificationsByCategoryId, updateFlowerClassifications } from '../function/CategoryAPI';
+import { deleteCategory, getCatalog, updateFlowerClassifications } from "../function/CategoryAPI";
+import { saveCategory } from "../function/CloudiaryAPI";
+import { normalizeText } from "../function/dbUtils";
+import { invalidateCatalog } from "../hooks/useCatalog";
 
-// Import API cho Flower (để lấy danh sách tất cả các hoa)
-import { getListFlower } from '../function/FlowerAPI';
-import { uploadImageCategory } from '../function/CloudiaryAPI';
+const FALLBACK = "https://placehold.co/80x80/eef4f2/0A7863?text=Hoa";
 
-const initialCategoryState = { ...CategoryDTO };
-
-// --- THAY ĐỔI 2: Thêm hàm helper getBase64 ---
 const getBase64 = (file) =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = () => resolve(reader.result);
-    reader.onerror = (error) => reject(error);
+    reader.onerror = reject;
   });
 
 function Category() {
   const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [isFlowerSelectionModalVisible, setIsFlowerSelectionModalVisible] = useState(false);
-  const [editingCategory, setEditingCategory] = useState(null);
-  const [selectedCategoryForFlowers, setSelectedCategoryForFlowers] = useState(null);
   const [allFlowers, setAllFlowers] = useState([]);
-  const [flowerSearchTerm, setFlowerSearchTerm] = useState('');
-  
-  // --- THAY ĐỔI 3: Thêm state cho ảnh xem trước của Category ---
-  const [categoryImageUrl, setCategoryImageUrl] = useState('');
-  
-  const [categoryForm] = Form.useForm();
-  const [flowerSelectionForm] = Form.useForm();
+  const [flowersByCategory, setFlowersByCategory] = useState({});
+  const [loading, setLoading] = useState(true);
 
-  // --- Functions for data fetching and manipulation (Category) ---
-  const fetchCategories = async () => {
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [categoryImageUrl, setCategoryImageUrl] = useState("");
+  const [savingCategory, setSavingCategory] = useState(false);
+  const [categoryForm] = Form.useForm();
+
+  const [pickCategory, setPickCategory] = useState(null);
+  const [pickedIds, setPickedIds] = useState([]);
+  const [flowerSearchTerm, setFlowerSearchTerm] = useState("");
+  const [savingPick, setSavingPick] = useState(false);
+
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getListCategory();
-      setCategories(data.map(category => ({ ...category, key: category.id })));
+      const data = await getCatalog();
+      setCategories(data.categories.map((c) => ({ ...c, key: c.id })));
+      setAllFlowers(data.flowers);
+      setFlowersByCategory(data.flowersByCategory);
     } catch (err) {
-      notification.error({ message: 'Lỗi tải dữ liệu Category' });
+      message.error("Lỗi tải dữ liệu danh mục.");
     } finally {
       setLoading(false);
     }
-  };
-
-  const fetchAllFlowers = async () => {
-    try {
-      const data = await getListFlower();
-      setAllFlowers(data);
-    } catch (err) {
-      notification.error({ message: 'Lỗi tải danh sách Hoa' });
-    }
-  };
-
-  useEffect(() => {
-    fetchCategories();
-    fetchAllFlowers();
   }, []);
 
-  // --- Form Handling (Category) ---
-  // --- THAY ĐỔI 4: Cập nhật các hàm xử lý Modal Category ---
-  const handleAddCategory = () => {
-    setEditingCategory(null);
-    categoryForm.resetFields();
-    setCategoryImageUrl(''); // Xóa ảnh xem trước
-    setIsModalVisible(true);
-  };
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
-  const handleEditCategory = (category) => {
+  // --- Thêm / sửa danh mục ---
+  const openCategoryForm = (category) => {
     setEditingCategory(category);
-    categoryForm.setFieldsValue(category);
-    setCategoryImageUrl(category.image); // Cập nhật ảnh xem trước
+    categoryForm.resetFields();
+    if (category) categoryForm.setFieldsValue({ name: category.name, image: category.image });
+    setCategoryImageUrl(category ? category.image : "");
     setIsModalVisible(true);
   };
 
-  const handleCategoryModalCancel = () => {
+  const closeCategoryForm = () => {
     setIsModalVisible(false);
     setEditingCategory(null);
+    setCategoryImageUrl("");
     categoryForm.resetFields();
-    setCategoryImageUrl(''); // Xóa ảnh xem trước
-  };
-  
-  // Hàm xử lý khi có thay đổi trên Upload component
-  const handleUploadChange = (info) => {
-    const file = info.fileList[0];
-    if (file && file.originFileObj) {
-      getBase64(file.originFileObj).then(url => setCategoryImageUrl(url));
-    } else if (!file) {
-      setCategoryImageUrl('');
-    }
   };
 
-  // --- THAY ĐỔI 5: Cập nhật hàm onFinishCategory để xử lý ảnh ---
   const onFinishCategory = async (values) => {
+    setSavingCategory(true);
     try {
-      await uploadImageCategory(values, editingCategory ? editingCategory : null,fetchCategories,handleCategoryModalCancel);
+      await saveCategory(values, editingCategory);
+      message.success(editingCategory ? "Đã cập nhật danh mục." : "Đã thêm danh mục.");
+      invalidateCatalog();
+      closeCategoryForm();
+      fetchData();
     } catch (err) {
-      notification.error({ message: `Lỗi khi ${editingCategory ? 'cập nhật' : 'thêm'} Category.` });
+      console.error(err);
+      message.error(`Lỗi khi ${editingCategory ? "cập nhật" : "thêm"} danh mục.`);
+    } finally {
+      setSavingCategory(false);
     }
   };
 
-  // --- Các hàm còn lại được giữ nguyên ---
+  const handleUploadChange = (info) => {
+    const file = info.fileList[info.fileList.length - 1];
+    if (file && file.originFileObj) getBase64(file.originFileObj).then(setCategoryImageUrl);
+  };
+
   const handleDeleteCategory = async (category) => {
     try {
       await deleteCategory(category.id);
-      notification.success({ message: `Đã xóa Category "${category.name}".` });
-      await fetchCategories();
+      message.success(`Đã xóa danh mục "${category.name}".`);
+      invalidateCatalog();
+      fetchData();
     } catch (err) {
-      notification.error({ message: `Lỗi khi xóa Category "${category.name}".` });
+      message.error(`Lỗi khi xóa danh mục "${category.name}".`);
     }
   };
 
-  const handleAddFlowersToCategory = async (category) => {
-    setSelectedCategoryForFlowers(category);
-    setFlowerSearchTerm('');
-    flowerSelectionForm.resetFields();
-    const currentClassifications = await getFlowerClassificationsByCategoryId(category.id);
-    const flowerIdsInCurrentCategory = new Set(currentClassifications.map(item => item.flowerId));
-    const initialFlowerSelectionValues = {};
-    allFlowers.forEach(flower => {
-      initialFlowerSelectionValues[`flower_${flower.id}`] = flowerIdsInCurrentCategory.has(flower.id);
-    });
-    flowerSelectionForm.setFieldsValue(initialFlowerSelectionValues);
-    setIsFlowerSelectionModalVisible(true);
+  // --- Gán hoa vào danh mục ---
+  const openPicker = (category) => {
+    setPickCategory(category);
+    setFlowerSearchTerm("");
+    setPickedIds((flowersByCategory[String(category.id)] || []).map((f) => String(f.id)));
   };
 
-  const handleFlowerSelectionModalCancel = () => {
-    setIsFlowerSelectionModalVisible(false);
-    setSelectedCategoryForFlowers(null);
-    setFlowerSearchTerm('');
-    flowerSelectionForm.resetFields();
+  const filteredFlowers = useMemo(() => {
+    const q = normalizeText(flowerSearchTerm);
+    return allFlowers.filter((f) => !q || normalizeText(f.name).includes(q));
+  }, [allFlowers, flowerSearchTerm]);
+
+  const pickedSet = useMemo(() => new Set(pickedIds), [pickedIds]);
+  const allVisiblePicked = filteredFlowers.length > 0 && filteredFlowers.every((f) => pickedSet.has(String(f.id)));
+
+  const toggleAllVisible = (checked) => {
+    const visible = filteredFlowers.map((f) => String(f.id));
+    setPickedIds((prev) =>
+      checked ? Array.from(new Set([...prev, ...visible])) : prev.filter((id) => !visible.includes(id))
+    );
   };
 
-  const onFinishFlowerSelection = async (values) => {
-    if (!selectedCategoryForFlowers) return;
-    const selectedFlowers = allFlowers.filter(flower => values[`flower_${flower.id}`]);
+  const savePicker = async () => {
+    if (!pickCategory) return;
+    setSavingPick(true);
     try {
-      await updateFlowerClassifications(selectedCategoryForFlowers.id, selectedFlowers);
-      notification.success({ message: 'Cập nhật phân loại hoa thành công' });
-      handleFlowerSelectionModalCancel();
+      const selected = allFlowers.filter((f) => pickedSet.has(String(f.id)));
+      await updateFlowerClassifications(pickCategory.id, selected);
+      message.success("Đã cập nhật hoa trong danh mục.");
+      invalidateCatalog();
+      setPickCategory(null);
+      fetchData();
     } catch (err) {
-      notification.error({ message: 'Lỗi cập nhật phân loại hoa' });
+      message.error("Lỗi cập nhật phân loại hoa.");
+    } finally {
+      setSavingPick(false);
     }
   };
-
-  const filteredFlowers = allFlowers.filter(flower =>
-    flower.name.toLowerCase().includes(flowerSearchTerm.toLowerCase())
-  );
 
   const columns = [
-    // ... Giữ nguyên columns
-    { title: 'STT', key: 'stt', render: (text, record, index) => index + 1, width: 70 },
-    { title: 'Tên Category', dataIndex: 'name', key: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
-    { title: 'Image', dataIndex: 'image', key: 'image', render: (imageUrl) => <Image src={imageUrl} alt="Category Image" style={{ maxWidth: '100px', maxHeight: '100px', objectFit: 'cover' }} fallback="https://via.placeholder.com/100?text=No+Image" /> },
-    { title: 'Hành Động', key: 'actions', render: (_, record) => ( <Space size="middle"> <Button type="primary" icon={<PlusOutlined />} onClick={() => handleAddFlowersToCategory(record)}> Thêm hoa vào loại </Button> <Button type="primary" icon={<EditOutlined />} onClick={() => handleEditCategory(record)} /> <Popconfirm title={`Xóa "${record.name}"?`} onConfirm={() => handleDeleteCategory(record)} okText="Xóa" cancelText="Hủy" okType="danger"> <Button type="danger" icon={<DeleteOutlined />} /> </Popconfirm> </Space> ), },
+    { title: "STT", key: "stt", render: (_, __, index) => index + 1, width: 60 },
+    {
+      title: "Ảnh",
+      dataIndex: "image",
+      key: "image",
+      width: 100,
+      render: (url, record) => (
+        <Image src={url || FALLBACK} alt={record.name} width={72} height={72} style={{ objectFit: "cover", borderRadius: 8 }} fallback={FALLBACK} />
+      ),
+    },
+    { title: "Tên danh mục", dataIndex: "name", key: "name", sorter: (a, b) => a.name.localeCompare(b.name, "vi") },
+    {
+      title: "Số hoa",
+      key: "count",
+      width: 100,
+      render: (_, record) => <Tag color="green">{(flowersByCategory[String(record.id)] || []).length}</Tag>,
+    },
+    {
+      title: "Hành động",
+      key: "actions",
+      render: (_, record) => (
+        <Space wrap>
+          <Button icon={<AppstoreAddOutlined />} onClick={() => openPicker(record)}>
+            Chọn hoa
+          </Button>
+          <Button icon={<EditOutlined />} onClick={() => openCategoryForm(record)} aria-label={`Sửa ${record.name}`} />
+          <Popconfirm
+            title={`Xóa "${record.name}"?`}
+            description="Các hoa trong danh mục sẽ không bị xóa."
+            okText="Xóa"
+            cancelText="Hủy"
+            okButtonProps={{ danger: true }}
+            onConfirm={() => handleDeleteCategory(record)}
+          >
+            <Button danger icon={<DeleteOutlined />} aria-label={`Xóa ${record.name}`} />
+          </Popconfirm>
+        </Space>
+      ),
+    },
   ];
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h1>Quản Lý Category</h1>
-      <Button type="primary" onClick={handleAddCategory} style={{ marginBottom: 16 }}>
-        Thêm Category Mới
-      </Button>
-      <Table columns={columns} dataSource={categories} loading={loading} pagination={{ pageSize: 10 }} bordered />
+    <div>
+      <div className="admin-toolbar">
+        <h1 style={{ margin: 0, fontSize: 24 }} className="grow">Quản lý danh mục</h1>
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => openCategoryForm(null)}>
+          Thêm danh mục mới
+        </Button>
+      </div>
+      <Table columns={columns} dataSource={categories} loading={loading} pagination={{ pageSize: 10 }} bordered scroll={{ x: 640 }} />
 
-      {/* Modal cho Form thêm/sửa Category */}
       <Modal
-        title={editingCategory ? 'Sửa Thông Tin Category' : 'Thêm Category Mới'}
+        title={editingCategory ? "Sửa danh mục" : "Thêm danh mục mới"}
         open={isModalVisible}
-        onCancel={handleCategoryModalCancel}
+        onCancel={() => !savingCategory && closeCategoryForm()}
         footer={null}
+        destroyOnClose
       >
-        <Form form={categoryForm} layout="vertical" onFinish={onFinishCategory}>
-          <Form.Item name="name" label="Tên Category" rules={[{ required: true, message: 'Vui lòng nhập tên Category!' }]}>
+        <Form form={categoryForm} layout="vertical" onFinish={onFinishCategory} disabled={savingCategory}>
+          <Form.Item name="name" label="Tên danh mục" rules={[{ required: true, whitespace: true, message: "Vui lòng nhập tên danh mục!" }]}>
             <Input />
           </Form.Item>
- 
-          {/* --- THAY ĐỔI 6: Thay thế Input bằng Upload.Dragger --- */}
           <Form.Item
             name="image"
-            label="Hình Ảnh"
-            rules={[{
-              // Rule tùy chỉnh để kiểm tra sự tồn tại của ảnh
-              validator: async (_, value) => {
-                if (categoryImageUrl) {
-                  return Promise.resolve();
-                }
-                // Nếu là chế độ sửa và đã có ảnh từ trước, không bắt buộc
-                if (editingCategory && editingCategory.image) {
-                    return Promise.resolve();
-                }
-                return Promise.reject(new Error('Vui lòng tải lên hình ảnh!'));
-              }
-            }]}
+            label="Hình ảnh"
+            rules={[
+              {
+                validator: async () =>
+                  categoryImageUrl ? Promise.resolve() : Promise.reject(new Error("Vui lòng tải lên hình ảnh!")),
+              },
+            ]}
           >
             <Upload.Dragger
               name="file"
@@ -209,10 +236,10 @@ function Category() {
               showUploadList={false}
               beforeUpload={() => false}
               onChange={handleUploadChange}
-              accept="image/png, image/jpeg"
+              accept="image/png, image/jpeg, image/webp"
             >
               {categoryImageUrl ? (
-                <img src={categoryImageUrl} alt="Xem trước" style={{ width: '100%', maxHeight: '200px', objectFit: 'contain' }} />
+                <img src={categoryImageUrl} alt="Xem trước" style={{ width: "100%", maxHeight: 200, objectFit: "contain" }} />
               ) : (
                 <div>
                   <p className="ant-upload-drag-icon"><InboxOutlined /></p>
@@ -221,59 +248,61 @@ function Category() {
               )}
             </Upload.Dragger>
           </Form.Item>
-
-          <Form.Item>
-            <Space>
-              <Button type="primary" htmlType="submit">
-                {editingCategory ? 'Cập Nhật' : 'Thêm'}
-              </Button>
-              <Button onClick={handleCategoryModalCancel}>Hủy</Button>
-            </Space>
-          </Form.Item>
+          <Space>
+            <Button type="primary" htmlType="submit" loading={savingCategory} disabled={false}>
+              {editingCategory ? "Cập nhật" : "Thêm"}
+            </Button>
+            <Button onClick={closeCategoryForm}>Hủy</Button>
+          </Space>
         </Form>
       </Modal>
 
-      {/* Modal cho Thêm Hoa vào Category (KHÔNG THAY ĐỔI) */}
       <Modal
-        title={`Thêm hoa vào Category: ${selectedCategoryForFlowers?.name || ''}`}
-        open={isFlowerSelectionModalVisible}
-        onCancel={handleFlowerSelectionModalCancel}
-        footer={null}
-        width={700}
+        title={`Chọn hoa cho danh mục: ${pickCategory ? pickCategory.name : ""}`}
+        open={Boolean(pickCategory)}
+        onCancel={() => !savingPick && setPickCategory(null)}
+        onOk={savePicker}
+        okText={`Lưu (${pickedIds.length} hoa)`}
+        cancelText="Hủy"
+        confirmLoading={savingPick}
+        width={720}
       >
-        <Form form={flowerSelectionForm} layout="vertical" onFinish={onFinishFlowerSelection}>
-          <Form.Item label="Tìm kiếm hoa theo tên">
-            <Input
-              placeholder="Nhập tên hoa để tìm kiếm..."
-              value={flowerSearchTerm}
-              onChange={(e) => setFlowerSearchTerm(e.target.value)}
-            />
-          </Form.Item>
-          <div style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid #d9d9d9', padding: '10px' }}>
-            {filteredFlowers.length === 0 ? (
-              <p>Không tìm thấy hoa nào.</p>
-            ) : (
-              filteredFlowers.map(flower => (
-                <div key={flower.id} style={{ display: 'flex', alignItems: 'center', padding: '8px', borderBottom: '1px solid #f0f0f0' }}>
-                  <Form.Item name={`flower_${flower.id}`} valuePropName="checked" noStyle>
-                    <Checkbox>
-                      <Space>
-                        <Image src={flower.image} alt={flower.name} width={40} height={40} style={{ objectFit: 'cover', borderRadius: '4px' }} fallback="https://via.placeholder.com/40?text=No" />
-                        <span>{flower.name} (ID: {flower.id})</span>
-                      </Space>
-                    </Checkbox>
-                  </Form.Item>
-                </div>
-              ))
-            )}
-          </div>
-          <Form.Item style={{ marginTop: '20px' }}>
-            <Space>
-              <Button type="primary" htmlType="submit">Lưu phân loại</Button>
-              <Button onClick={handleFlowerSelectionModalCancel}>Hủy</Button>
-            </Space>
-          </Form.Item>
-        </Form>
+        <Space style={{ width: "100%", marginBottom: 12 }} direction="vertical">
+          <Input.Search
+            placeholder="Tìm hoa theo tên…"
+            allowClear
+            value={flowerSearchTerm}
+            onChange={(e) => setFlowerSearchTerm(e.target.value)}
+          />
+          <Checkbox checked={allVisiblePicked} onChange={(e) => toggleAllVisible(e.target.checked)}>
+            Chọn tất cả {flowerSearchTerm ? "kết quả tìm kiếm" : "hoa"} ({filteredFlowers.length})
+          </Checkbox>
+        </Space>
+        <div style={{ maxHeight: 420, overflowY: "auto", border: "1px solid #eee", borderRadius: 8 }}>
+          {filteredFlowers.length === 0 ? (
+            <Empty description="Không tìm thấy hoa nào." style={{ padding: 24 }} />
+          ) : (
+            filteredFlowers.map((flower) => {
+              const id = String(flower.id);
+              return (
+                <label
+                  key={id}
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 12px", borderBottom: "1px solid #f3f3f3", cursor: "pointer" }}
+                >
+                  <Checkbox
+                    checked={pickedSet.has(id)}
+                    onChange={(e) =>
+                      setPickedIds((prev) => (e.target.checked ? [...prev, id] : prev.filter((x) => x !== id)))
+                    }
+                  />
+                  <img src={flower.image || FALLBACK} alt="" width={44} height={44} style={{ objectFit: "cover", borderRadius: 6 }} />
+                  <span style={{ flex: 1 }}>{flower.name}</span>
+                  <span style={{ color: "#666" }}>{Number(flower.price || 0).toLocaleString("vi-VN")}đ</span>
+                </label>
+              );
+            })
+          )}
+        </div>
       </Modal>
     </div>
   );

@@ -1,77 +1,98 @@
 // src/layouts/MainLayout.js
 
-import React, { Children, useState } from 'react';
-import { Outlet } from 'react-router-dom';
-import { Layout, Drawer, Menu as AntMenu, Input, Button } from 'antd';
-import { SearchOutlined,StepBackwardOutlined } from '@ant-design/icons';
-import AppHeader from './AppHeader';
-import Footer from './Footer';
-
-const { Header, Content } = Layout;
-
-// Dữ liệu cho các menu, tách ra để dễ quản lý
-const categoryMenuItems = [
-    { key: 'cat-1', label: 'Hộp Quà Trà Ngon & Cà Phê Sạch',children:[{ key: 'cat-23', label: 'Hộp quà trà ngon bên trong' },]},
-    { key: 'cat-2', label: 'Trà Cầu Đất' },
-    { key: 'cat-3', label: 'Cà Phê Cầu Đất' },
-    { key: 'cat-4', label: 'Bột Matcha' },
-    { key: 'cat-5', label: 'Bột Rau Củ' },
-    { key: 'cat-6', label: 'Đặc Sản Đà Lạt' },
-    { key: 'cat-7', label: 'Hạt Dinh Dưỡng' },
-];
-const mainNavItems = [
-    { key: 'about', label: 'VỀ CHÚNG TÔI' },
-    { key: 'contact', label: 'LIÊN HỆ XƯỞNG HOA CỦA KHA' },
-    { key: 'care', label: 'CHĂM SÓC KHÁCH HÀNG' },
-];
+import React, { useEffect, useState } from "react";
+import { Outlet, useLocation, useNavigate, Link } from "react-router-dom";
+import { Drawer, Input, FloatButton } from "antd";
+import { TikTokOutlined, SafetyCertificateOutlined, HomeOutlined } from "@ant-design/icons";
+import AppHeader from "./AppHeader";
+import Footer from "./Footer";
+import useCatalog from "../hooks/useCatalog";
+import { contact } from "../theme/theme";
 
 function MainLayout() {
   const [drawerVisible, setDrawerVisible] = useState(false);
+  const { categories } = useCatalog();
+  const { pathname, search } = useLocation();
+  const navigate = useNavigate();
 
-  const showDrawer = () => setDrawerVisible(true);
-  const closeDrawer = () => setDrawerVisible(false);
+  // Đóng menu và cuộn lên đầu khi đổi trang
+  useEffect(() => {
+    setDrawerVisible(false);
+    window.scrollTo(0, 0);
+  }, [pathname, search]);
+
+  const isAdmin = localStorage.getItem("adminLoggedIn") === "true";
 
   return (
-    <Layout>
-      <Header style={{ padding: 0, height: 'auto', lineHeight: 'normal' }}>
-        <AppHeader onMenuClick={showDrawer} />
-      </Header>
+    <div className="shop-layout">
+      <AppHeader onMenuClick={() => setDrawerVisible(true)} />
 
-      <Content>
-        {/* Truyền dữ liệu menu vào các trang con qua Outlet */}
-        <Outlet context={{ categoryMenuItems }} />
-      </Content>
+      <main>
+        <Outlet context={{ categories }} />
+      </main>
 
-      <Footer/>
+      <Footer />
 
-      {/* Drawer cho giao diện mobile */}
+      {/* Menu cho điện thoại */}
       <Drawer
-        title="Menu"
+        title="Danh mục"
         placement="left"
-        onClose={closeDrawer}
+        onClose={() => setDrawerVisible(false)}
         open={drawerVisible}
-        bodyStyle={{ padding: '15px' }}
+        styles={{ body: { padding: 0 } }}
+        width={300}
       >
-        <Input.Search
-          placeholder="Tìm kiếm..."
-          style={{ marginBottom: '20px' }}
-        />
-        <AntMenu
-          mode="inline"
-          items={mainNavItems}
-          style={{ border: 'none', marginBottom: '15px' }}
-          onClick={closeDrawer}
-        />
-        <AntMenu
-          mode="inline"
-          items={categoryMenuItems}
-          style={{ border: 'none' }}
-          defaultOpenKeys={['categories']}
-        
-          onClick={closeDrawer}
-        />
+        <div style={{ padding: 16 }}>
+          <Input.Search
+            placeholder="Tìm hoa theo tên…"
+            allowClear
+            onSearch={(v) => navigate(v.trim() ? `/projects?q=${encodeURIComponent(v.trim())}` : "/projects")}
+          />
+        </div>
+        <ul className="cat-sidebar__list">
+          <li>
+            <Link to="/" className="cat-sidebar__item">
+              <HomeOutlined className="cat-sidebar__thumb" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }} />
+              <span className="cat-sidebar__label">Trang chủ</span>
+            </Link>
+          </li>
+          {categories.map((cat) => (
+            <li key={cat.id}>
+              <Link to={`/projects/${cat.id}`} className="cat-sidebar__item">
+                {cat.image ? <img src={cat.image} alt="" className="cat-sidebar__thumb" /> : <span className="cat-sidebar__thumb" />}
+                <span className="cat-sidebar__label">{cat.name}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
       </Drawer>
-    </Layout>
+
+      <FloatButton.Group shape="circle" style={{ right: 24, bottom: 24 }}>
+        {isAdmin && (
+          <FloatButton icon={<SafetyCertificateOutlined />} tooltip="Trang quản trị" href="/admin/main/listflower" />
+        )}
+        <FloatButton
+          icon={<TikTokOutlined />}
+          tooltip="TikTok của shop"
+          href={contact.tiktokUrl}
+          target="_blank"
+        />
+        <FloatButton
+          icon={
+            <img
+              src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Icon_of_Zalo.svg/120px-Icon_of_Zalo.svg.png"
+              width={20}
+              height={20}
+              alt="Zalo"
+            />
+          }
+          tooltip="Nhắn Zalo đặt hoa"
+          href={contact.zaloUrl}
+          target="_blank"
+        />
+        <FloatButton.BackTop tooltip="Lên đầu trang" visibilityHeight={400} />
+      </FloatButton.Group>
+    </div>
   );
 }
 
