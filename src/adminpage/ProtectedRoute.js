@@ -8,7 +8,7 @@ const ProtectedRoute = () => {
   // Nếu đã đăng nhập (isAdminLoggedIn là true), cho phép render nội dung của route con
   // (tức là component Admin và các component con của nó như ListFlower, Category)
   // Ngược lại, nếu chưa đăng nhập, chuyển hướng ngay lập tức về trang /login
-  return isAdminLoggedIn ? <Outlet /> : <Navigate to="/login" replace />;
+  return isAdminLoggedIn ? <Outlet /> : <Navigate to="/admin/login" replace />;
 };
 
 export default ProtectedRoute

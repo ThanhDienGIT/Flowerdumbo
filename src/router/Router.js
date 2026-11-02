@@ -4,7 +4,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 // Import Layout và các Pages
 import MainLayout from "../layouts/MainLayout";
 import HomePage from "../pages/HomePage";
-import NotFoundPage from "../layouts/NotFoundPage";
 import ProjectsPage from "../pages/ProjectsPage";
 import DetailProjects from "../pages/DetailProjects";
 import Admin from "../adminpage/Admin";
@@ -15,6 +14,7 @@ import ProtectedRoute from "../adminpage/ProtectedRoute";
 import Setting from "../adminpage/Setting";
 import TestAPI from "../adminpage/TestAPI";
 import FeedBack from "../pages/FeedBack";
+import StudioPage from "../pages/StudioPage";
 import FeedBackCustomer from "../adminpage/FeedBackCustomer";
 
 
@@ -46,6 +46,10 @@ const Router = () => {
           <Route index element={<HomePage />} />
           <Route path="projects" element={<ProjectsPage />} />
           <Route path="projects/:categoryId" element={<ProjectsPage />} />
+          <Route path="studio" element={<StudioPage />} />
+          <Route path="feedback" element={<FeedBack />} />
+          <Route path="detail" element={<DetailProjects />} />
+          <Route path="detail/:detailId" element={<DetailProjects />} />
           {/* Đây là một dynamic route. ':projectId' sẽ là một tham số động. 
               Ví dụ: /projects/project-a, /projects/project-b 
           */}
@@ -55,9 +59,6 @@ const Router = () => {
         </Route>
         {/* Bạn cũng có thể định nghĩa các route không có MainLayout ở đây, ví dụ: trang login */}
         {/* <Route path="/login" element={<LoginPage />} /> */}
-        <Route path="feedback" element={<FeedBack />} />
-            <Route path="detail" element={<DetailProjects />} />
-          <Route path="detail/:detailId" element={<DetailProjects />} />
 
 
       </Routes>

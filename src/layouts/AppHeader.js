@@ -1,203 +1,108 @@
-import React, { useEffect } from "react";
-import { Row, Col, Typography, Space, Menu, Button, Badge } from "antd";
-import Icon, {
-  TikTokOutlined
-} from "@ant-design/icons";
-import "./AppHeader.css"; // Đảm bảo file CSS này tồn tại và được cấu hình đúng
-import { Link } from "react-router-dom";
-// Hãy chắc chắn rằng đường dẫn đến logo của bạn là chính xác
-import logo from "../assets/images/z6890559277656_f1ca855ae19bbf61771c9bdc47437271.jpg"; // GỢI Ý: Bạn nên thay thế file logo hiện tại bằng logo trong ảnh
-import { getListCategory } from "../function/CategoryAPI";
-import { set } from "firebase/database";
-const { Text } = Typography;
+import React, { useEffect, useState } from "react";
+import { Link, NavLink, useNavigate, useSearchParams } from "react-router-dom";
+import { Input, Button } from "antd";
+import { MenuOutlined, PhoneOutlined, MessageOutlined } from "@ant-design/icons";
+import logo from "../assets/images/z6890559277656_f1ca855ae19bbf61771c9bdc47437271.jpg";
+import useCatalog from "../hooks/useCatalog";
+import { contact } from "../theme/theme";
 
-// Bảng màu được cập nhật
-const themeColors = {
-  topBarBg: "#1A644D", // Màu xanh lá cây đậm chính
-  menuHoverDarkBg: "#2A785D", // Màu nền xanh lá sáng hơn một chút khi hover menu
-  white: "#FFFFFF",
-  mainHeaderBg: "#FFFFFF",
-  textColor: "#333333",
-};
-
-// Cập nhật styles cho giao diện mới
-const styles = {
-  topBar: {
-    backgroundColor: themeColors.topBarBg,
-    padding: "8px 0",
-    textAlign: "center",
-  },
-  topBarText: {
-    color: themeColors.white,
-  },
-  mainHeader: {
-    backgroundColor: themeColors.mainHeaderBg,
-    padding: "15px 50px",
-    borderBottom: "1px solid #f0f0f0",
-  },
-  mainHeaderMobile: {
-    backgroundColor: themeColors.mainHeaderBg,
-    padding: "10px 15px",
-    borderBottom: "1px solid #f0f0f0",
-  },
-  headerIcons: {
-    fontSize: "24px",
-    color: themeColors.textColor,
-  },
-  navBar: {
-    backgroundColor: themeColors.topBarBg, // <-- THAY ĐỔI: Nền menu thành xanh đậm
-    boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-  },
-  navMenu: {
-    backgroundColor: "transparent",
-    width: "100%",
-    justifyContent: "center",
-  },
-};
-
-
-
+/**
+ * Header 3 tầng:
+ *  1. Thanh trên (xanh đậm): khu vực, giờ làm việc, mạng xã hội
+ *  2. Logo + ô tìm kiếm + hotline + nút đặt hoa
+ *  3. Menu danh mục (xanh) + sọc trang trí xanh/cam
+ */
 const AppHeader = ({ onMenuClick }) => {
-  const [navMenuItems, setNavMenuItems] = React.useState([]);
-  const fetchCategories = async () => {
-    try {
-      const categories = await getListCategory();
-      const arrayLuuTam = [];
-      categories.map((ele) => {
-        const object = {
-          key: ele.id,
-          label:  <Link to={"/projects/" + ele.id}> <span style={{color:'pink'}}>♥</span> {ele.name}</Link>,
-        };
-        arrayLuuTam.push(object);
-      });
-      setNavMenuItems(arrayLuuTam);
-      console.log("Danh mục từ Realtime DB:", categories);
-    } catch (error) {
-      console.error("Lỗi khi lấy danh mục:", error);
-    }
-  };
+  const { categories } = useCatalog();
+  const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const [keyword, setKeyword] = useState(params.get("q") || "");
 
   useEffect(() => {
-    fetchCategories();
-  }, []); // Hiệu ứng rỗng để tránh cảnh báo
+    setKeyword(params.get("q") || "");
+  }, [params]);
+
+  const onSearch = (value) => {
+    const q = value.trim();
+    navigate(q ? `/projects?q=${encodeURIComponent(q)}` : "/projects");
+  };
 
   return (
-    <div className="header-wrapper">
-      {/* Tầng 1: Giờ mở cửa (Hiển thị trên cả mobile và desktop) */}
-
-      {/* ===== DESKTOP HEADER ===== */}
-      <div className="desktop-header">
-        {/* Tầng 2: Logo và Icons */}
-        <div style={styles.topBar}>
-          <Text style={styles.topBarText}>
-            XƯỞNG HOA' S KHA 
-          </Text>
+    <header className="site-header">
+      <div className="topbar">
+        <div className="shop-container topbar__inner">
+          <span>Xưởng Hoa's Kha · Shop hoa online {contact.area}</span>
+          <span className="topbar__links">
+            <span>Giờ làm việc: {contact.hours}</span>
+            <a href={contact.zaloUrl} target="_blank" rel="noopener noreferrer">Zalo</a>
+            <a href={contact.tiktokUrl} target="_blank" rel="noopener noreferrer">TikTok</a>
+            <Link to="/feedback">Phản hồi khách hàng</Link>
+          </span>
         </div>
-        <Row style={styles.mainHeader} justify="space-between" align="middle">
-          <Col></Col>
-          <Col>
-            <Link to={"/"}>
-              <img src={logo} alt="Logo" style={{ height: 150 }} /> 
-            </Link>
-          </Col>
-          <Col></Col>
-        </Row>
-
-        {/* Tầng 3: Menu chính */}
-        <Row style={styles.navBar} justify="center" align="middle">
-          <Menu
-            mode="horizontal"
-            items={navMenuItems}
-            style={styles.navMenu}
-            className="main-nav-menu"
-          />
-        </Row>
       </div>
 
-      {/* ===== MOBILE HEADER ===== */}
-      <div className="mobile-header">
-        <div style={styles.topBar}>
-          <Text style={styles.topBarText}>
-           Xưởng Hoa' s Kha
-          </Text>
-        </div>
-        {/* Tầng 2: Logo và Icons */}
-        <Row style={styles.mainHeader} justify="center" align="middle">
-        
-          <Col>
-            <Link to={"/"}>
-              <img src={logo} alt="Logo" style={{ height: 150 }} />
-            </Link>
-          </Col>
-       
-         
-        </Row>
-
-        {/* Tầng 3: Menu chính */}
-        <Row style={styles.navBar} justify="center" align="middle">
-          <Menu
-            mode="horizontal"
-            items={navMenuItems}
-            style={styles.navMenu}
-            className="main-nav-menu"
+      <div className="shop-container mainbar__inner">
+        <Button
+          className="mainbar__menu-btn"
+          icon={<MenuOutlined />}
+          aria-label="Mở menu"
+          onClick={onMenuClick}
+          size="large"
+        />
+        <Link to="/" className="mainbar__logo" aria-label="Xưởng Hoa's Kha - Trang chủ">
+          <img src={logo} alt="Xưởng Hoa's Kha" />
+        </Link>
+        <div className="mainbar__search">
+          <Input.Search
+            size="large"
+            placeholder="Tìm hoa theo tên…"
+            allowClear
+            enterButton
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            onSearch={onSearch}
           />
-        </Row>
+        </div>
+        <a className="mainbar__hotline" href={contact.zaloUrl} target="_blank" rel="noopener noreferrer">
+          <PhoneOutlined />
+          <span>
+            <strong>{contact.zaloLabel}</strong>
+            <small>từ {contact.hours}</small>
+          </span>
+        </a>
+        <a className="mainbar__cta" href={contact.zaloUrl} target="_blank" rel="noopener noreferrer">
+          <MessageOutlined /> Đặt hoa qua Zalo
+        </a>
       </div>
 
-     
-
-      {/* CSS để chuyển đổi giao diện và style cho menu */}
-      <style>{`
-        
-        .desktop-header { display: block; }
-        .mobile-header { display: none;  }
-
-        @media (max-width: 991px) {
-          .desktop-header { display: none; }
-          .mobile-header { display: block; }
-        }
-
-        /* === Custom styles for Ant Design Menu === */
-        
-        /* Bỏ gạch chân mặc định */
-        .main-nav-menu.ant-menu-horizontal > .ant-menu-item::after,
-        .main-nav-menu.ant-menu-horizontal > .ant-menu-submenu::after {
-          border-bottom: none !important;
-        }
-
-        /* THAY ĐỔI: Chỉnh màu chữ menu thành trắng và giảm khoảng cách */
-        .main-nav-menu .ant-menu-item,
-        .main-nav-menu .ant-menu-submenu-title {
-          padding: 8px 16px !important;
-          margin: 0 2px !important; /* Giảm khoảng cách giữa các mục */
-          border-radius: 6px;
-          color: ${themeColors.white} !important; /* Đổi màu chữ thành trắng */
-          font-weight: 500;
-          transition: background-color 0.3s;
-        }
-
-        /* THAY ĐỔI: Hiệu ứng nền khi hover trên nền xanh đậm */
-        .main-nav-menu .ant-menu-item:hover,
-        .main-nav-menu .ant-menu-submenu-title:hover,
-        .main-nav-menu .ant-menu-item-selected,
-        .main-nav-menu .ant-menu-submenu-selected .ant-menu-submenu-title {
-          background-color: ${themeColors.menuHoverDarkBg} !important;
-          color: ${themeColors.white} !important;
-        }
-        
-        /* Đảm bảo icon mũi tên cũng màu trắng */
-        .main-nav-menu .ant-menu-submenu-title .ant-menu-item-icon {
-            vertical-align: middle;
-            margin-left: 6px;
-            font-size: 10px;
-            color: ${themeColors.white} !important;
-        }
-        .main-nav-menu .ant-menu-title-content {
-             vertical-align: middle;
-        }
-
-      `}</style>
-    </div>
+      <nav className="mainnav" aria-label="Danh mục chính">
+        <div className="shop-container">
+          <ul className="mainnav__list">
+            <li>
+              <NavLink to="/" end className={({ isActive }) => "mainnav__link" + (isActive ? " is-active" : "")}>
+                Trang chủ
+              </NavLink>
+            </li>
+            <li>
+              <NavLink to="/studio" className={({ isActive }) => "mainnav__link" + (isActive ? " is-active" : "")}>
+                Studio cắm hoa
+              </NavLink>
+            </li>
+            {categories.map((cat) => (
+              <li key={cat.id}>
+                <NavLink
+                  to={`/projects/${cat.id}`}
+                  className={({ isActive }) => "mainnav__link" + (isActive ? " is-active" : "")}
+                >
+                  {cat.name}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </nav>
+      <div className="nav-stripe" />
+    </header>
   );
 };
 
