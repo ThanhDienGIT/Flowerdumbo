@@ -56,6 +56,12 @@ function MainLayout() {
               <span className="cat-sidebar__label">Trang chủ</span>
             </Link>
           </li>
+          <li>
+            <Link to="/studio" className="cat-sidebar__item">
+              <span className="cat-sidebar__thumb" />
+              <span className="cat-sidebar__label">Studio cắm hoa</span>
+            </Link>
+          </li>
           {categories.map((cat) => (
             <li key={cat.id}>
               <Link to={`/projects/${cat.id}`} className="cat-sidebar__item">

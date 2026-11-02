@@ -78,6 +78,14 @@ const HomePage = () => {
         ))}
       </div>
 
+      <Link to="/studio" className="studio-cta">
+        <span>
+          <strong>Studio cắm hoa trực tuyến</strong>
+          <small>Tự chọn bình, giỏ hoặc giấy gói và cắm từng cành theo ý bạn</small>
+        </span>
+        <span className="btn-more">Cắm hoa ngay</span>
+      </Link>
+
       {error && (
         <Alert type="error" showIcon style={{ marginTop: 24 }} message="Không tải được dữ liệu cửa hàng. Vui lòng tải lại trang." />
       )}

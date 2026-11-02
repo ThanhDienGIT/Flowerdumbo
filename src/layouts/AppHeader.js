@@ -83,6 +83,11 @@ const AppHeader = ({ onMenuClick }) => {
                 Trang chủ
               </NavLink>
             </li>
+            <li>
+              <NavLink to="/studio" className={({ isActive }) => "mainnav__link" + (isActive ? " is-active" : "")}>
+                Studio cắm hoa
+              </NavLink>
+            </li>
             {categories.map((cat) => (
               <li key={cat.id}>
                 <NavLink

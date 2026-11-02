@@ -14,6 +14,7 @@ import ProtectedRoute from "../adminpage/ProtectedRoute";
 import Setting from "../adminpage/Setting";
 import TestAPI from "../adminpage/TestAPI";
 import FeedBack from "../pages/FeedBack";
+import StudioPage from "../pages/StudioPage";
 import FeedBackCustomer from "../adminpage/FeedBackCustomer";
 
 
@@ -45,6 +46,7 @@ const Router = () => {
           <Route index element={<HomePage />} />
           <Route path="projects" element={<ProjectsPage />} />
           <Route path="projects/:categoryId" element={<ProjectsPage />} />
+          <Route path="studio" element={<StudioPage />} />
           <Route path="feedback" element={<FeedBack />} />
           <Route path="detail" element={<DetailProjects />} />
           <Route path="detail/:detailId" element={<DetailProjects />} />
